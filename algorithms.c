@@ -1,0 +1,5 @@
+#include "mstdio.c"
+#include "graph.c"
+#include "heap.c"
+#include "list.c"
+#include "avl.c"

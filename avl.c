@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #ifdef LIB_STD
+// used only for debugging
 #include <_malloc.h>
 #else
 #include <malloc.h>

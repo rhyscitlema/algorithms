@@ -1,7 +1,8 @@
 /*
     avl_test.c
 
-    To compile, execute: gcc avl_test.c avl.c -o avl
+    To compile, execute:
+        gcc avl_test.c avl.c -o avl
 
     To run, execute: ./avl
 */

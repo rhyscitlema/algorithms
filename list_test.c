@@ -1,7 +1,8 @@
 /*
     list_test.c
 
-    To compile, execute: gcc list_test.c list.c -o list
+    To compile, execute:
+        gcc list_test.c list.c -o list
 
     To run, execute: ./list
 */

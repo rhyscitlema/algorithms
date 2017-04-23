@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #ifdef LIB_STD
+// used only for debugging
 #include <_malloc.h>
 #else
 #include <malloc.h>
@@ -181,6 +182,7 @@ void  list_sort (List* list, void* arg, int compare(void* key1, void* key2, void
 
     for(size = 1; ; size *= 2)
     {
+        stop  = NULL;
         start = NULL;
         first = root;
         while(first != NULL)

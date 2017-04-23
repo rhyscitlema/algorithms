@@ -6,9 +6,10 @@
 
     USE AT YOUR OWN RISK!
 */
-#include <heap.h>
+#include "heap.h"
 #include <malloc.h>
 #include <string.h>
+#include <stdio.h>
 
 #define heap_data ((void**)(heap+1))
 
@@ -185,8 +186,8 @@ void do_heap_print (const Heap* heap, int indent, int space, int l,
     int i;
     if(l > heap->size) return;
     do_heap_print (heap, indent, space+indent, l*2+1, node_print); // right subtree
-    for(i=0; i<space; i++) putchar(' ');                        // print indentation
-    printf("%s\r\n", node_print(heap->arg, heap_data[l]));     // print heap node
+    for(i=0; i<space; i++) putchar(' ');                           // print indentation
+    printf("%s\r\n", node_print(heap->arg, heap_data[l]));         // print heap node
     do_heap_print (heap, indent, space+indent, l*2+0, node_print); // left subtree
 }
 

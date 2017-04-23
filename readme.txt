@@ -1,3 +1,5 @@
+libalgo
+-------
 
 Fast C implementation of library-algorithms.
 These can be used in a program as sub-routines.
@@ -9,11 +11,9 @@ The header files show which algorithms are
 implemented or which algorithmic problems
 are solved, and available documentation.
 
-To compile execute:
-    gcc -c -Wall -I . -o algorithms.o algorithms.c
+To compile with GCC, execute: make
 
 Provided by Rhyscitlema
 @ http://rhyscitlema.com
 
 USE AT YOUR OWN RISK!
-

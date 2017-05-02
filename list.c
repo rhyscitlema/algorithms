@@ -158,7 +158,7 @@ void  list_delete (List* list, void* key)
 }
 
 
-void* list_find (List* list, void* arg, int compare(void* key1, void* key2, void* arg), void* key1)
+void* list_find (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg), const void* key1)
 {
     assert(list!=NULL);
     ListNode* node = list->head;
@@ -170,7 +170,7 @@ void* list_find (List* list, void* arg, int compare(void* key1, void* key2, void
 }
 
 
-void  list_sort (List* list, void* arg, int compare(void* key1, void* key2, void* arg))
+void  list_sort (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg))
 {
     assert(list!=NULL);
     int i, size;

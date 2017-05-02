@@ -39,8 +39,8 @@ void  list_head_push (List* list, void* node);  // given node, push it as new he
 void  list_tail_push (List* list, void* node);  // given node, push it as new tail
 void  list_delete    (List* list, void* node);  // given node, delete it
 
-void* list_find (List* list, void* arg, int compare(void* key1, void* key2, void* arg), void* key1);
-void  list_sort (List* list, void* arg, int compare(void* key1, void* key2, void* arg));
+void* list_find (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg), const void* key1);
+void  list_sort (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg));
 void  list_merge(List* first, List* second);    // given two lists, merge them and clear the second
 
 #endif

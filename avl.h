@@ -23,8 +23,8 @@ typedef struct _AVLT    // AVL Tree
     long size;          // number of nodes
 
     int keysize;
-    void* arg;
-    int (*compare) (void* key1, void* key2, void* arg);
+    const void* arg;
+    int (*compare) (const void* key1, const void* key2, const void* arg);
 } AVLT;
 
 static inline void avl_clear (AVLT *tree)
@@ -58,8 +58,12 @@ enum AVL_OPR
 
     keysize is ignored unless on AVL_ADD or AVL_INS.
 */
-void* avl_do (enum AVL_OPR OPR, AVLT* tree, void* key1, int keysize,
-              void* arg, int (*compare) (void* key1, void* key2, void* arg));
+void* avl_do (enum AVL_OPR OPR,
+              AVLT* tree,
+              void* key1,
+              int keysize,
+              const void* arg,
+              int (*compare) (const void* key1, const void* key2, const void* arg));
 
 
 void  avl_free (AVLT* tree);    // given tree, free all nodes

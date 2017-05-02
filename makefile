@@ -18,7 +18,7 @@ CC = gcc
 AR = ar
 
 # compiler flags
-CC_FLAGS = -Wall $(CFLAGS)
+CC_FLAGS = -Wall -pedantic $(CFLAGS)
 
 # archiver flags
 AR_FLAGS = -crs #$(ARFLAGS)

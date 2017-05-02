@@ -2,7 +2,7 @@
     avl_test.c
 
     To compile, execute:
-        gcc avl_test.c avl.c -o avl
+        gcc -Wall -pedantic avl_test.c avl.c -o avl
 
     To run, execute: ./avl
 */
@@ -20,9 +20,8 @@ static void avl_print_tree (void* avl, int indent)
     avl_print_tree(avl_left(avl), indent+4);
 }
 
-
-static int avl_compare (void* key1, void* key2, void* arg)
-{ return strcmp((char*)key1, (char*)key2); }
+static int avl_compare (const void* key1, const void* key2, const void* arg)
+{ return strcmp((const char*)key1, (const char*)key2); }
 
 
 int main()
@@ -69,4 +68,3 @@ int main()
     }
     avl_free(&tree);
 }
-

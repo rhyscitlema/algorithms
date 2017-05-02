@@ -209,8 +209,12 @@ static bool rebalance (AVLT* tree, AVL* node)
 
 
 
-void* avl_do (enum AVL_OPR OPR, AVLT* tree, void* key1, int keysize,
-              void* arg, int (*compare) (void* key1, void* key2, void* arg))
+void* avl_do (enum AVL_OPR OPR,
+              AVLT* tree,
+              void* key1,
+              int keysize,
+              const void* arg,
+              int (*compare) (const void* key1, const void* key2, const void* arg))
 {
     assert(tree!=NULL);
     if(!keysize) keysize = tree->keysize;

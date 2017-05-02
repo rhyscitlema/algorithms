@@ -2,7 +2,7 @@
     list_test.c
 
     To compile, execute:
-        gcc list_test.c list.c -o list
+        gcc -Wall -pedantic list_test.c list.c -o list
 
     To run, execute: ./list
 */
@@ -21,7 +21,6 @@ enum OPR
     TAILPOP
 };
 
-
 static void list_print (List* list)
 {
     void* node = list_head(list);
@@ -30,9 +29,8 @@ static void list_print (List* list)
     printf("\n----------------------------- size = %ld\n", list->size);
 }
 
-
-static int node_compare (void* key1, void* key2, void* arg)
-{ return strcmp((char*)key1, (char*)key2); }
+static int node_compare (const void* key1, const void* key2, const void* arg)
+{ return strcmp((const char*)key1, (const char*)key2); }
 
 
 int main()

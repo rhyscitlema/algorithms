@@ -211,7 +211,7 @@ static bool rebalance (AVLT* tree, AVL* node)
 
 void* avl_do (enum AVL_OPR OPR,
               AVLT* tree,
-              void* key1,
+              const void* key1,
               int keysize,
               const void* arg,
               int (*compare) (const void* key1, const void* key2, const void* arg))
@@ -220,7 +220,7 @@ void* avl_do (enum AVL_OPR OPR,
     if(!keysize) keysize = tree->keysize;
     if(!arg) arg = tree->arg;
     if(!compare) compare = tree->compare;
-    if(key1==NULL || compare==NULL) return NULL;
+    if(!compare || !key1) return NULL;
     void* key2;
 
     AVL* node = tree->root;
@@ -228,7 +228,7 @@ void* avl_do (enum AVL_OPR OPR,
     {
         if(OPR==AVL_ADD || OPR==AVL_INS || OPR==AVL_PUT)
         {
-            if(OPR==AVL_PUT) key2 = key1;
+            if(OPR==AVL_PUT) key2 = (void*)(size_t)key1;
             else
             {   key2 = avl_new(key1, keysize);
                 if(!key2) return NULL;
@@ -276,7 +276,7 @@ void* avl_do (enum AVL_OPR OPR,
 
     if(OPR==AVL_ADD || OPR==AVL_INS || OPR==AVL_PUT)
     {
-        if(OPR==AVL_PUT) key2 = key1;
+        if(OPR==AVL_PUT) key2 = (void*)(size_t)key1;
         else
         {   key2 = avl_new (key1, keysize);
             if(!key2) return NULL;
@@ -298,7 +298,7 @@ void* avl_do (enum AVL_OPR OPR,
     else if(OPR==AVL_DEL && found)
         avl_delete(tree, getkey(node));
 
-    return found ? key1 : NULL;
+    return (void*)found;
 }
 
 

@@ -20,7 +20,7 @@ typedef struct _AVL
 
 typedef struct _AVLT    // AVL Tree
 {   AVL* root;          // root of tree
-    long size;          // number of nodes
+    int size;           // number of nodes
 
     int keysize;
     const void* arg;
@@ -35,22 +35,20 @@ enum AVL_OPR
 {   AVL_FIND,   // find a key that equals given key
     AVL_CEIL,   // find lowest key greater or equal
     AVL_FLOOR,  // find highest key lesser or equal
-    AVL_ADD,    // add if not found, else return key2
-    AVL_INS,    // add even if found, if found return key1
-    AVL_DEL,    // find one and delete, if found return key1
+    AVL_ADD,    // add if not found, else return existing key2
+    AVL_INS,    // add even if found, if found return (void*)1
+    AVL_DEL,    // find one and delete, if found return (void*)1
     AVL_PUT     // put the node obtained from a call to avl_new()
 };
 
 
 /*  If on very first operation then set *tree = {0}.
-    "void* arg" is only passed to the compare() function.
 
+    'arg' is only passed to the compare() function.
     'key1' is the given key, 'key2' is from existing node.
-    This information may be needed by a comparison that
-    involves doing some changes to the existing key2.
 
     If given key does not already exist then NULL is
-    returned, else if on AVL_INS or AVL_DEL then key1
+    returned, else if on AVL_INS or AVL_DEL then (void*)1
     is returned, else the existing key2 is returned.
 
     When any of keysize, arg and compare is 0 or NULL, the
@@ -60,7 +58,7 @@ enum AVL_OPR
 */
 void* avl_do (enum AVL_OPR OPR,
               AVLT* tree,
-              void* key1,
+              const void* key1,
               int keysize,
               const void* arg,
               int (*compare) (const void* key1, const void* key2, const void* arg));
@@ -75,7 +73,7 @@ void* avl_prev (void* avl);     // given node, get its prev
 void* avl_left (void* avl);     // given node, get its left
 void* avl_right (void* avl);    // given node, get its right
 void* avl_parent (void* avl);   // given node, get its parent
-void  avl_delete (AVLT* tree, void* avl); // given node, delete it
+void  avl_delete (AVLT* tree, void* avl); // given node, delete it. tree can be NULL
 void* avl_new (const void* key1, int keysize); // get a new node, use AVL_PUT later
 
 

@@ -56,13 +56,15 @@ int main()
         {
             void* key2 = avl_do (opr, &tree, str, strlen(str)+1, NULL, avl_compare);
 
+            if(key2==(void*)1) key2 = "FOUND";
+
             printf("key1 = %s , key2 = %s\n", str, (char*)key2);
 
             if((opr==AVL_ADD && !key2) || opr==AVL_INS || (opr==AVL_DEL && key2))
             {
                 printf("-----------------------------\n");
                 avl_print_tree(avl_root(&tree), 0);
-                printf("----------------------------- size = %ld\n", tree.size);
+                printf("----------------------------- size = %d\n", tree.size);
             }
         }
     }

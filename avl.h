@@ -42,7 +42,7 @@ enum AVL_OPR
 };
 
 
-/*  If on very first operation then set *tree = {0}.
+/** If on very first operation then set *tree = {0}.
 
     'arg' is only passed to the compare() function.
     'key1' is the given key, 'key2' is from existing node.

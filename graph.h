@@ -9,67 +9,75 @@
 #ifndef _GRAPH_H
 #define _GRAPH_H
 
+#include <stdbool.h>
+
 
 typedef long cost;
 typedef struct { int u, v; cost c; } Edge;
-typedef Edge* Adja;
+typedef struct { int    v; cost c; } *Adja;
+#define EdgeList Edge*
+#define AdjaList Adja*
 
-#define AdjaV(adja) (*(int*)adja)   // get number of vertexes
-#define AdjaE(adja) (adja[1]-1)->v  // get number of edges
-#define AdjaD(adja) (adja[1]-1)->c  // get graph-is-directed
-#define AdjaPrev(adja) (adja + (AdjaD(adja) ? V : 0))
+#define AdjaGet(adjaList,u) (adjaList[u])
+#define AdjaV(adjaList) (*(int*)(adjaList))         // get number of vertexes
+#define AdjaE(adjaList) (AdjaGet(adjaList,1)-1)->v  // get number of edges
+#define AdjaD(adjaList) (AdjaGet(adjaList,1)-1)->c  // get graph-is-directed
+#define AdjaPrev(adjaList) (adjaList + (AdjaD(adjaList) ? AdjaV(adjaList) : 0))
 
 
 // The given graph is converted to a string
-// 'out' which is then returned. The given
-// 'out' is assumed to be large enough.
-char* print_edge_list (char* out, const Edge* edge);
-char* print_adja_list (char* out, const Adja* adja);
+// which is put inside the given 'out' and then
+// returned. 'out' is assumed to be large enough.
+char* print_edge_list (char* out, const EdgeList edgeList);
+char* print_adja_list (char* out, const AdjaList adjaList);
 
-Edge* load_edge_list (const char* str);
-Adja* load_adja_list (const char* str);
+EdgeList load_edge_list (const char* str);
+AdjaList load_adja_list (const char* str);
 
-Edge* clone_edge_list (const Edge* edge);
-Adja* clone_adja_list (const Adja* adja);
+EdgeList clone_edge_list (const EdgeList edgeList);
+AdjaList clone_adja_list (const AdjaList adjaList);
 
-Adja* edge_list_to_adja_list (const Edge* edge);
-Edge* adja_list_to_edge_list (const Adja* adja);
+AdjaList edge_list_to_adja_list (const EdgeList edgeList);
+EdgeList adja_list_to_edge_list (const AdjaList adjaList);
+
+//void free_edge_list (EdgeList edgeList) { free(edgeList); }
+//void free_adja_list (AdjaList adjaList) { free(adjaList); }
 
 
 // code below shows how to access an adja_list
-static inline Edge *getAdjaEdge (const Adja* adja, int u, int v)
+static inline Adja getEdgeOfAdjaList (const AdjaList adjaList, int u, int v)
 {
-    int i, m = adja[u][0].v;    // get number of sink adjacent vertexes to u
-    for(i=1; i<=m; i++)         // for every sink adjacent vertex
-        if(v == adja[u][i].v)   // check if it is the given vertex v
-            return &adja[u][i]; // return pointer to adjacent edge
+    int i, m = adjaList[u][0].v;    // get number of sink adjacent vertexes to u
+    for(i=1; i<=m; i++)             // for every sink adjacent vertex
+        if(v == adjaList[u][i].v)   // check if it is the given vertex v
+            return &adjaList[u][i]; // return pointer to adjacent edge
     return NULL;
 }
 
-// does nothing but show how DFS traversal is coded
-void DFS_traversal (const Adja* adja, int root);
+// this does nothing but show how DFS traversal is coded
+void DFS_traversal (const AdjaList adjaList, int rootVertex);
 
 // renumber source and sink vertexes separately
-void renumber_graph_vertexes (Edge* edge);
+void renumber_edge_list_vertexes (EdgeList edgeList);
 
 
 // reduce given graph to an MST
-void minimum_spanning_tree (Edge* edge);
+void minimum_spanning_tree (EdgeList edgeList);
 
-// The result is the edges of the tree, with
-// path[i].c = total cost from given source 's'.
-Edge* single_source_shortest_path (const Adja* adja, int s);
+// The result is the edges of the constructed tree,
+// with result[i].c = total cost from given source.
+EdgeList single_source_shortest_path (const AdjaList adjaList, int source);
 
 // return an array of single_source_shortest_paths,
 // for every vertex starting from vertex 1 at index 1.
-Edge** all_pairs_shortest_path (const Adja* adja);
+EdgeList* all_pairs_shortest_path (const AdjaList adjaList);
 
-// return a result graph as an edge_list
-Edge* maximum_matching_unweighted (const Adja* adja);
+// return the result graph as an unweighted undirected EdgeList
+EdgeList maximum_matching_unweighted (const AdjaList adjaList, bool skipPart1);
 
 
 // Alternative to the bsearch() from <stdlib.h>.
-// Extra argument to compare() can be passed
+// Extra argument to compare() may be passed
 // by using a pointer location just before key.
 int binary_search (
     int (*compare)(const void* key, const void* array, int index),
@@ -177,6 +185,7 @@ graph using adjacency list:
     8  1  9 400
     9  1  8 400
     """""
+
 
 ----------------------------------------
 2) Graph data as data bytes in memory

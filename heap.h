@@ -1,6 +1,8 @@
 /*
     heap.h
 
+    A minimum-heap implementation.
+
     Provided by Rhyscitlema
     @ http://rhyscitlema.com
 
@@ -11,25 +13,19 @@
 
 #include <stdbool.h>
 
+/** Before calling any function, first initialise
+    heap.size to = 0, as well as heap.data to =
+    (void**) malloc (heap.maxSize * sizeof(void*));
+    The functions only change heap.size.
+*/
 typedef struct _Heap
-{   // NOTE: do NOT access struct variables directly.
+{   void** data;
     int size;
-    int max_size;
+    int maxSize;
     bool indexed;
     const void* arg;
-    int (*node_compare) (const void* arg, const void* a, const void* b);
+    int (*node_compare) (const void* a, const void* b, const void* arg);
 } Heap;
-
-Heap* heap_build (
-    Heap* heap,         // If first time then heap==NULL.
-    int max_size,       // If any other argument is 0
-    bool indexed,       // or NULL then it is ignored,
-    const void* arg,    // this is useful for editing.
-    int (*heap_node_compare) (const void* arg, const void* a, const void* b));
-
-int heap_size (Heap* heap);
-
-void heap_free (Heap* heap);
 
 void heap_push (Heap* heap, void* node);
 
@@ -45,8 +41,8 @@ void heap_heapify (Heap* heap);
 
 bool heap_find (const Heap* heap, void* value);
 
-void heap_print (const Heap* heap, int indent,
-    const char* (*heap_node_print) (const void* arg, const void* a));
+void heap_print(const Heap* heap, int level, // root is at level 1
+                void (*node_print) (const void* node, const void* arg, int level));
 
 #endif
 
@@ -54,12 +50,12 @@ void heap_print (const Heap* heap, int indent,
 
 /*
 
-1) Indexed heap:
+** Indexed heap:
 If heap is indexed then void* node must actually be an int* node,
-which points to a free int memory to be used only by heap functions.
+which points to a free int* memory to be used only by heap functions.
 This is only necessary if heap_update or heap_remove is to be used.
 
-2) Append then heapify:
+** Append then heapify:
 heap_append is to be used only if heap_heapify will be called later.
 They are useful so to set a heap of n elements in O(n) time. The
 alternative is to use heap_push, which would take O(n log n) time.

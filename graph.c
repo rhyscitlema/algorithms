@@ -6,9 +6,10 @@
 
     USE AT YOUR OWN RISK!
 */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include <assert.h>
 #include "graph.h"
 #include "heap.h"
 
@@ -22,19 +23,16 @@ Adja* edge_list_to_adja_list (const Edge* edge)
     bool directed = (bool)edge[0].c;
 
     Adja *next, *prev;
-    Edge *dnex, *dpre;
+    Adja dnex, dpre;
     int i, u, v;
 
     u = 1+V;     // for adjacency list pointers.
     v = 1+V+E*2; // for the data at list pointers.
     if(directed) { u+=V; v+=V; }
-    i = u;
 
-    u *= sizeof(Adja);
-    v *= sizeof(Edge);
-    next = (Adja*)malloc(u+v);
-    dnex = (Edge*)(next+i);
+    next = (Adja*)malloc(u*sizeof(Adja) + v*sizeof(Edge));
 
+    dnex = (Adja)(next+u);
     prev = next; if(directed) prev += V;
     dpre = dnex; if(directed) dpre += V+E;
 
@@ -77,12 +75,10 @@ Adja* edge_list_to_adja_list (const Edge* edge)
         c = edge[i].c;
 
         j = ++next[u][0].v;
-        next[u][j].u = u;
         next[u][j].v = v;
         next[u][j].c = c;
 
         j = ++prev[v][0].v;
-        next[v][j].u = v;
         prev[v][j].v = u;
         prev[v][j].c = c;
     }
@@ -138,18 +134,18 @@ Edge* load_edge_list (const char* str)
     if(0<=*str && *str<='9')
     {
         sscanf(str, "%d", &i);
-        while(i!=-1 && *str!=0)
+        while(i>=0 && *str!=0)
         { if(*str=='\n') i--; str++; }
     }
     else return NULL;
     if(*str==0) return NULL;
 
     while(isSpace(*str)) str++;
-    sscanf(str, "%d", &V); nextWord(str);
-    sscanf(str, "%d", &E); nextWord(str);
-    sscanf(str, "%d", &i); nextWord(str); directed=i;
-    sscanf(str, "%d", &i); nextWord(str); weighted=i;
-    sscanf(str, "%d", &i); nextWord(str);
+    if(sscanf(str, "%d", &V)!=1) return NULL; nextWord(str);
+    if(sscanf(str, "%d", &E)!=1) return NULL; nextWord(str);
+    if(sscanf(str, "%d", &i)!=1) return NULL; nextWord(str); directed=i;
+    if(sscanf(str, "%d", &i)!=1) return NULL; nextWord(str); weighted=i;
+    if(sscanf(str, "%d", &i)!=1) return NULL; nextWord(str);
 
     Edge* edge = (Edge*)malloc((1+E)*sizeof(Edge));
     edge[0].u = V;
@@ -192,8 +188,6 @@ Edge* load_edge_list (const char* str)
     return edge;
 }
 
-
-
 Adja* load_adja_list (const char* str)
 {
     Edge* edge = load_edge_list (str);
@@ -206,16 +200,17 @@ Adja* load_adja_list (const char* str)
 
 char* print_edge_list (char* out, const Edge* edge)
 {
+    if(!out) return out;
     if(!edge) { *out=0; return out; }
+
     int V = edge[0].u;
     int E = edge[0].v;
     bool directed = (bool)edge[0].c;
     bool weighted = 0;
     int i;
-    for(i=1; i<=E; i++) if(edge[i].c!=1) { weighted=1; break; }
 
-    if(!out) return out;
-    if(!edge) { *out=0; return out; }
+    // check if any edge cost is not 1
+    for(i=1; i<=E; i++) if(edge[i].c!=1) { weighted=1; break; }
     char* str = out;
     str += sprintf(str, "0\n%d %d %d %d 0\n\n", V, E, directed, weighted);
 
@@ -233,6 +228,7 @@ char* print_edge_list (char* out, const Edge* edge)
 
 char* print_adja_list (char* out, const Adja* adja)
 {
+    if(!out) return out;
     if(!adja) { *out=0; return out; }
     int V = AdjaV(adja);
     int E = AdjaE(adja);
@@ -247,9 +243,6 @@ char* print_adja_list (char* out, const Adja* adja)
         for(i=1; i<=m; i++) if(adja[u][i].c!=1) break;
         if(i<=m) { weighted=1; break; }
     }
-
-    if(!out) return out;
-    if(!adja) { *out=0; return out; }
     char* str = out;
     str += sprintf(str, "0\n%d %d %d %d 1\n\n", V, E, directed, weighted);
 
@@ -298,7 +291,7 @@ Edge* clone_edge_list (const Edge* edge)
 
 
 
-void renumber_graph_vertexes (Edge* edge)
+void renumber_edge_list_vertexes (Edge* edge)
 {
     int u, v, i, j=0;
     int V = edge[0].u;
@@ -360,7 +353,7 @@ void minimum_spanning_tree (Edge* edge)
 
 #define convert(a) ((const Edge*)((const int*)a-1))
 
-static int sssp_heap_node_compare (const void* arg, const void* a, const void* b)
+static int sssp_heap_node_compare (const void* a, const void* b, const void* arg)
 {
     cost r = convert(a)->c - convert(b)->c;
     return (r<0) ? -1 : (r>0) ? +1 : 0;
@@ -369,30 +362,34 @@ static int sssp_heap_node_compare (const void* arg, const void* a, const void* b
 Edge* single_source_shortest_path (const Adja* adja, int s)
 {
     int V = AdjaV(adja);
-    int i, u, m, positive=1;
+    int i, u, m;
+    bool positive=true;
 
     if(s<1 || s>V) { printf("Error: 1 <= s=%d <= V=%d.\n", s, V); return NULL; }
     Edge* path = (Edge*)malloc((1+V)*sizeof(Edge));
-    for(i=1; i<=V; i++) path[i].u = 0;
+    memset(path, 0, (1+V)*sizeof(Edge));
+    //for(i=1; i<=V; i++) path[i].u = 0;
 
     /* check if any edge cost is negative */
     for(u=1; u<=V; u++)
     {
         m = adja[u][0].v;
         for(i=1; i<=m; i++) if(adja[u][i].c<0) break;
-        if(i<=m) { positive=0; break; }
+        if(i<=m) { positive=false; break; }
     }
 
-    /* using Dijkstra's algorithm O(ElogV) */
+    /* using Dijkstra's algorithm O(E log V)-time */
     if(positive)
     {
-        Heap* heap = heap_build(NULL, V, 1, path, sssp_heap_node_compare);
+        Heap _heap = { NULL, 0, V, true, NULL, sssp_heap_node_compare };
+        Heap *heap = &_heap;
+        heap->data = (void**)malloc(V*sizeof(void*));
+
         heap_push(heap, &path[s].v);
         path[s].u = s;
         path[s].c = 0;
         while(1)
         {
-            //heap_print(heap, 4);
             void* ptr;
             if(!heap_pop(heap, &ptr)) break;
             u = convert(ptr) - path; // get vertex value
@@ -400,26 +397,24 @@ Edge* single_source_shortest_path (const Adja* adja, int s)
             m = adja[u][0].v;
             for(i=1; i<=m; i++)
             {
-                cost c;
-                int v;
-                v = adja[u][i].v;
-                c = adja[u][i].c + path[u].c; 
+                int  v = adja[u][i].v;
+                cost c = adja[u][i].c + path[u].c; 
 
                 if(path[v].u==0     // if a new vertex or
                 || path[v].c > c)   // if a better path
                 {
+                    path[v].c = c;
                     if(path[v].u==0)
                          heap_push(heap, &path[v].v);
                     else heap_update(heap, &path[v].v);
                     path[v].u = u;
-                    path[v].c = c;
                 }
             }
         }
-        heap_free(heap);
+        free(heap->data);
     }
 
-    /* using Bellman-Ford algorithm O(V^2) */
+    /* using Bellman-Ford algorithm O(V^2)-time */
     else
     {
         int* check = (int*)malloc(3*V*sizeof(int));
@@ -473,7 +468,6 @@ Edge* single_source_shortest_path (const Adja* adja, int s)
         }
     }
 
-    bool directed = AdjaD(adja);
     int E;
     for(E=0, i=1; i<=V; i++)
         if(path[i].u != 0 && i!=s)
@@ -482,7 +476,7 @@ Edge* single_source_shortest_path (const Adja* adja, int s)
         }
     path[0].u = V;
     path[0].v = E;
-    path[0].c = directed;
+    path[0].c = AdjaD(adja);
     return path;
 }
 
@@ -559,162 +553,208 @@ Edge** all_pairs_shortest_path (const Adja* adja)
 
 
 typedef struct {
-    int i;  // free memory needed by heap.h
+    int i;  // the free-memory needed by heap.h
     int c;  // count of free adjacent vertexes
-    // i must be declared first
+    // i must be declared first so to have:
+    // vertex = (mmug*)heap_node - mmug_array;
 } mmug;
 
 /* compare count of free adjacent vertexes */
-static int mmug_heap_node_compare(const void* arg, const void* a, const void* b)
+static int mmug_heap_node_compare (const void* a, const void* b, const void* arg)
 { return ( ((const mmug*)a)->c - ((const mmug*)b)->c ); }
-
-
-bool matching (int u, int V, int next[], const Adja* adja)
-{
-    int claim[10000] = {0};
-    int queue[10000];
-    int beg, end=0;
-    queue[end++] = u;
-
-    for(beg=0; beg!=end; ++beg)
-    {
-        u = queue[beg];
-        int i, m = adja[u][0].v;
-        for(i=1; i<=m; i++)
-        {
-            int v = adja[u][i].v;
-            if(!next[v]) // if free vertex
-            {
-                while(1)
-                {
-                    int t;
-                    t = next[u];
-                    next[u] = v;
-                    next[v] = u;
-                    if(t==0) break;
-                    v = t;
-                    u = claim[v];
-                }
-                return 1;
-            }
-            if(!claim[v])               // if not claimed
-            {   claim[v] = u;           // mark u as claiming v
-                queue[end++] = next[v]; // push who monopolises v
-            }
-        }
-    }
-    return 0;
-}
 
 
 /* Explanation of implemented algorithm at:
    http://rhyscitlema.com/algorithms/maximum-bipartite-matching
 */
-Edge* maximum_matching_unweighted(const Adja* adja)
+Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
 {
     if(!adja) return NULL;
-    int V = AdjaV(adja);     // get number of vertexes
-
-    mmug* count= (mmug*)malloc((1+V)*sizeof(mmug));
-    int* next  = (int *)malloc((1+V)*sizeof(int ));
-    memset(next, 0, (1+V)*sizeof(int));
-
+    int V = AdjaV(adja); // get V = number of vertexes
     int i, m, u, v;
-    //const Adja* graph;
+
+    const Adja* graph;
     const Adja* prev = AdjaPrev(adja);
     // adja = adjacency list of source-to-sink vertexes
     // prev = adjacency list of sink-from-source vertexes
 
+    m = (1+V)*(sizeof(int)+sizeof(mmug)+sizeof(void*));
+    int* match = (int*)malloc(m);   // m = total memory needed
+    mmug* count = (mmug*)(match+1+V);
+    void** hdata = (void**)(count+1+V);
+
+    if(match==NULL) return NULL;    // if failed to allocate memory
+    for(u=1; u<=V; u++) match[u]=0; // else initialise main array
+
+
+    //*****************************************************************
+    //*** Part 1 of algorithm : is often enough to solve optimally! ***
+    //*****************************************************************
+    if(!skipPart1) {
+
     // initialise the heap with all vertexes
-    Heap* heap = heap_build(NULL, V, 1, count, mmug_heap_node_compare);
+    Heap _heap = { hdata, 0, V, true, NULL, mmug_heap_node_compare };
+    Heap *heap = &_heap;
     for(u=1; u<=V; u++)
     {
         // get m = total number of adjacent vertexes
         m = adja[u][0].v;
-        if(adja!=prev)
+        if(adja!=prev) // if a directed graph
             m += prev[u][0].v;
         count[u].c = m;
-        if(m!=0) heap_push(heap, &count[u].i);
+        if(m) heap_push(heap, &count[u].i);
     }
 
-    /*void* ptr;
-    while(heap_pop(heap, &ptr))     // while heap is not empty
+    void* heapNode;
+    while(heap_pop(heap, &heapNode)) // while heap is not empty
     {
         // get u = vertex with minimum free adjacent vertexes
-        u = (mmug*)ptr - count;
-        if(count[u].c==0) continue; // if no free adjacent vertex
-        count[u].c=0;               // mark u as removed from heap
+        u = (mmug*)heapNode - count;
+        if(count[u].c==0) continue; // if no free adjacent vertex then skip
+        count[u].c=0;               // else mark u as removed from heap
 
         int t=0;
-        graph = adja;
-        while(1)
+        graph = adja;               // start with 'adja' list
+        while(true)
         {
             m = graph[u][0].v;      // get number of adjacent vertexes
             for(i=1; i<=m; i++)     // for every adjacent vertex
             {
                 v = graph[u][i].v;  // get adjacent vertex
-                if(count[v].c)      // if is inside heap
-                {  count[v].c--;    // decrement count of free vertexes
+                if(count[v].c>0)    // if is inside heap
+                {  count[v].c--;    // decrement count of free adjacent vertexes
                    heap_update(heap, &count[v].i); // update position in heap
-                   if(t==0 || count[t].c > count[v].c) t=v; // get free vertex
+
+                   // get free vertex of minimum count of free adjacent vertexes
+                   if(t==0 || count[t].c > count[v].c) t=v;
                 }
             }
             if(graph==prev) break;
-            else graph = prev;      // switch from adja to prev list
+            else graph = prev;      // switch from 'adja' to 'prev' list
         }
-        v=t;
+        v=t;    // get v = new free vertex
 
-        next[u] = v;    // assign free vertex
-        next[v] = u;
+        match[u] = v;   // match free vertex
+        match[v] = u;
         count[v].c = 0; // remove v from heap
         heap_remove(heap, &count[v].i);
 
         // now tell all adjacent to v that v is monopolised.
-        u=v; // set u=v so to use exact same code as before
-        graph = adja;
-        while(1)
+        u=v; // set u=v so to use exact same code as before!!!
+
+        graph = adja;               // start with 'adja' list
+        while(true)
         {
             m = graph[u][0].v;      // get number of adjacent vertexes
             for(i=1; i<=m; i++)     // for every adjacent vertex
             {
                 v = graph[u][i].v;  // get adjacent vertex
-                if(count[v].c)      // if is inside heap
-                {  count[v].c--;    // decrement count of free vertexes
+                if(count[v].c>0)    // if is inside heap
+                {  count[v].c--;    // decrement count of free adjacent vertexes
                    heap_update(heap, &count[v].i); // update position in heap
                 }
             }
             if(graph==prev) break;
-            else graph = prev;      // switch from adja to prev list
+            else graph = prev;      // switch from 'adja' to 'prev' list
         }
-    }*/
+    }
+    }
 
-    for(i=1; i<=V; i++) matching(i, V, next, adja);
 
-    int E;
-    // get number of edges of result graph
-    for(E=0, u=1; u<=V; u++) if(next[u]) E++;
+    //****************************************************************
+    //*** Part 2 of algorithm : may be faster when executed alone! ***
+    //****************************************************************
 
-    // allocate memory for result graph
+    int E; // number of edges of the result graph
+    while(true)
+    {
+        int beg=0, end=0;
+        int* queue = match+(1+V)*1; // queue used by the breadth-first search.
+        int* claim = match+(1+V)*2; // claim[v] is the claimer of the claimed v.
+        int* vfree = match+(1+V)*3; // vfree[v] is the free vertex to start claiming
+
+        for(u=1; u<=V; u++) // initialisations, push all unmatched vertexes to queue
+        {
+            if(match[u]) // if u is a matched vertex
+                 { claim[u] = vfree[u] = 0; }
+            else { claim[u] = vfree[u] = queue[end++] = u; }
+        }
+        E = (V-end)/2; // count of matched vertex pairs
+        //printf("-------------------------------------- E=%d\n", E);
+
+        for( ; beg!=end; beg++)     // do the queue-based backtracking-search
+        {
+            u = queue[beg];
+            v = vfree[u];           // get v = free vertex which u is derived from
+            assert(v>0);
+            if(match[v]) continue;  // check whether this v is still unmatched
+
+            graph = adja;           // start with 'adja' list
+            while(true)
+            {
+                m = graph[u][0].v;  // get number of adjacent vertexes
+                for(i=1; i<=m; i++) // for every adjacent vertex
+                {
+                    v = graph[u][i].v;  // get adjacent vertex
+                    int t = vfree[v];   // get t = free vertex which v is derived from
+
+                    // check whether a new re-matching has been uncovered
+                    if(t && !match[t] && t != vfree[u])
+                    {
+                        claim[v] = u;       // ensure v is never claimed again
+                        int tv = match[v];  // prepare for 2nd re-matching
+                        while(true)
+                        {
+                            claim[u] = u;   // ensure u is never claimed again
+                            t = match[u];   // prepare for next iteration
+                            match[u] = v;
+                            match[v] = u;   // uncover the augmenting path
+                            if(t==0)
+                            {   if(tv==0) break; // if no further re-matching
+                                t=tv; tv=0;      // prevent any further re-matching
+                            }
+                            v = t;          // get v = the next claimed vertex
+                            u = claim[t];   // get u = the claimer to this v
+                        }
+                        E=-1; // notify that a re-matching process was performed
+                        break;
+                    }
+                    if(!claim[v])   // if not yet claimed
+                    {
+                        claim[v] = u;       // Mark u as claiming v
+                        t = match[v];       // Get who monopolises v
+                        vfree[t] = vfree[u];
+                        queue[end++] = t;   // Push it to queue
+                    }
+                }
+                if(i<=m) break; // if re-matching was performed then break
+
+                if(graph==prev) break;
+                else graph = prev;  // switch from 'adja' to 'prev' list
+            }
+        }
+        if(E!=-1) break; // no re-matching performed means solution is optimal
+    }
+
+    // allocate memory for the result graph
     Edge *edge = (Edge*) malloc ((1+E)*sizeof(Edge));
 
     // build the edge-list of the result graph
     for(E=0, u=1; u<=V; u++)
     {
-        v = next[u];
-        if(v<u) continue;
-        E++;
+        v = match[u];
+        if(v<u) continue; // avoid repetitions
+        ++E;
         edge[E].u = u;
         edge[E].v = v;
-        edge[E].c = 1;
+        edge[E].c = 1; // set weight to = 1
     }
     edge[0].u = V;
     edge[0].v = E;
-    edge[0].c = adja!=prev;
+    edge[0].c = 0; // mark as undirected
 
     // free allocated memory
-    free(next);
-    free(count);
-    heap_free(heap);
+    free(match);
     return edge;
 }
 
@@ -722,9 +762,9 @@ Edge* maximum_matching_unweighted(const Adja* adja)
 /*********************************************************************************/
 
 
-void DFS_traversal (const Adja* adja, int root)
+void DFS_traversal (const Adja* adjaList, int rootVertex)
 {
-    int V = *(int*)adja;
+    int V = AdjaV(adjaList);
     int i, u, v, p;
     cost c;
 
@@ -732,8 +772,8 @@ void DFS_traversal (const Adja* adja, int root)
     bool* visited = (bool*)malloc((1+V)*sizeof(bool));
     memset(visited, 0, (1+V)*sizeof(bool));
 
-    // initialise stack with root node
-    v = root; // get first node
+    // initialise stack with root vertex
+    v = rootVertex;
     p = 0;
     stack[p].u = v;
     stack[p].v = 1;
@@ -744,16 +784,16 @@ void DFS_traversal (const Adja* adja, int root)
     {
         u = stack[p].u;
         i = stack[p].v;
-        while(1)
+        while(true)
         {
             // if no more v nodes for u
-            if(i > adja[u][0].v)
+            if(i > adjaList[u][0].v)
             {
                 if(p==0) { p--; break; }
                 i = stack[p].c;
                 u = stack[p-1].u;
                 v = stack[p].u;
-                c = getAdjaEdge(adja,u,v)->c;
+                c = getEdgeOfAdjaList(adjaList,u,v)->c;
 
                 // process node below
                 v = u*c*0; // nothing useful
@@ -763,7 +803,7 @@ void DFS_traversal (const Adja* adja, int root)
                 stack[p].c += i;
                 break;
             }
-            v = adja[u][i++].v;
+            v = adjaList[u][i++].v;
             if(!visited[v])
             {
                 // first record position of next v

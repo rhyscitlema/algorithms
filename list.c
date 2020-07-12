@@ -21,35 +21,35 @@
 #endif
 
 
-static inline void* nodeToKey (ListNode* node) { return node ? node+1 : NULL; }
+static inline ITEM* nodeToItem (ListNode* node) { return node ? (ITEM*)(node+1) : NULL; }
 
-static inline ListNode* keyToNode (void* key) { return key ? (ListNode*)key-1 : NULL; }
-
-
-void* list_head (List* list) { return list ? nodeToKey(list->head) : NULL; }
-
-void* list_tail (List* list) { return list ? nodeToKey(list->tail) : NULL; }
-
-void* list_next (void* node) { return node ? nodeToKey(keyToNode(node)->next) : NULL; }
-
-void* list_prev (void* node) { return node ? nodeToKey(keyToNode(node)->prev) : NULL; }
+static inline ListNode* itemToNode (ITEM* item) { return item ? ((ListNode*)item)-1 : NULL; }
 
 
-void* list_new (const void* key1, unsigned int keysize)
+ITEM* list_head (List* list) { return list ? nodeToItem(list->head) : NULL; }
+
+ITEM* list_tail (List* list) { return list ? nodeToItem(list->tail) : NULL; }
+
+ITEM* list_next (ITEM* node) { return node ? nodeToItem(itemToNode(node)->next) : NULL; }
+
+ITEM* list_prev (ITEM* node) { return node ? nodeToItem(itemToNode(node)->prev) : NULL; }
+
+
+ITEM* list_new (const ITEM* item, unsigned int itemsize)
 {
-	assert(keysize>0);
-	unsigned int size = sizeof(ListNode) + keysize;
+	assert(itemsize>0);
+	unsigned int size = sizeof(ListNode) + itemsize;
 	ListNode* node = (ListNode*)_malloc(size, "ListNode");
 	memset(node, 0, size);
-	node->keysize = keysize;
-	void* key2 = nodeToKey(node);
-	if(key1 && key2) memcpy(key2, key1, keysize);
-	return key2;
+	node->itemsize = itemsize;
+	ITEM* item2 = nodeToItem(node);
+	if(item && item2) memcpy(item2, item, itemsize);
+	return item2;
 }
 
 static void node_remove (ListNode* node)
 {
-	unsigned int size = sizeof(ListNode) + node->keysize;
+	unsigned int size = sizeof(ListNode) + node->itemsize;
 	memset(node, 0, size);
 	_free(node, "ListNode");
 }
@@ -81,7 +81,7 @@ void  list_merge (List* first, List* second)
 	list_clear(second);
 }
 
-void* list_head_pop (List* list)
+ITEM* list_head_pop (List* list)
 {
 	assert(list!=NULL);
 	ListNode* node = list->head;
@@ -91,10 +91,10 @@ void* list_head_pop (List* list)
 	if(list->head==NULL) list->tail = NULL;
 	else list->head->prev = NULL;
 	node->prev = node->next = NULL;
-	return nodeToKey(node);
+	return nodeToItem(node);
 }
 
-void* list_tail_pop (List* list)
+ITEM* list_tail_pop (List* list)
 {
 	assert(list!=NULL);
 	ListNode* node = list->tail;
@@ -104,13 +104,13 @@ void* list_tail_pop (List* list)
 	if(list->tail==NULL) list->head = NULL;
 	else list->tail->next = NULL;
 	node->prev = node->next = NULL;
-	return nodeToKey(node);
+	return nodeToItem(node);
 }
 
-void* list_node_pop (List* list, void* key)
+ITEM* list_node_pop (List* list, ITEM* item)
 {
 	assert(list!=NULL);
-	ListNode* node = keyToNode(key);
+	ListNode* node = itemToNode(item);
 	if(!node) return NULL;
 	list->size--;
 	if(node==list->head) list->head = node->next;
@@ -118,15 +118,15 @@ void* list_node_pop (List* list, void* key)
 	if(node->next) node->next->prev = node->prev;
 	if(node->prev) node->prev->next = node->next;
 	node->prev = node->next = NULL;
-	return nodeToKey(node);
+	return nodeToItem(node);
 }
 
 
-void  list_head_push (List* list, void* key)
+void  list_head_push (List* list, ITEM* item)
 {
 	assert(list!=NULL);
-	if(!list || !key) return;
-	ListNode* node = keyToNode(key);
+	if(!list || !item) return;
+	ListNode* node = itemToNode(item);
 	node->prev = NULL;
 	node->next = list->head;
 	if(list->head) node->next->prev = node;
@@ -135,11 +135,11 @@ void  list_head_push (List* list, void* key)
 	list->size++;
 }
 
-void  list_tail_push (List* list, void* key)
+void  list_tail_push (List* list, ITEM* item)
 {
 	assert(list!=NULL);
-	if(!list || !key) return;
-	ListNode* node = keyToNode(key);
+	if(!list || !item) return;
+	ListNode* node = itemToNode(item);
 	node->next = NULL;
 	node->prev = list->tail;
 	if(list->tail) node->prev->next = node;
@@ -148,28 +148,28 @@ void  list_tail_push (List* list, void* key)
 	list->size++;
 }
 
-void  list_delete (List* list, void* key)
+void  list_delete (List* list, ITEM* item)
 {
-	if(key==NULL) return;
-	if(list) list_node_pop(list, key);
-	node_remove(keyToNode(key));
+	if(item==NULL) return;
+	if(list) list_node_pop(list, item);
+	node_remove(itemToNode(item));
 }
 
 
-void* list_find (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg), const void* key1)
+ITEM* list_find (List* list, const void* arg, int compare(const ITEM* item1, const ITEM* item2, const void* arg), const ITEM* item1)
 {
 	assert(list!=NULL);
 	ListNode* node = list->head;
 	for( ; node!=NULL; node = node->next)
 	{
-		void* key2 = nodeToKey(node);
-		if(0==compare(key1, key2, arg)) return key2;
+		ITEM* item2 = nodeToItem(node);
+		if(0==compare(item1, item2, arg)) return item2;
 	}
 	return NULL;
 }
 
 
-void  list_sort (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg))
+void  list_sort (List* list, const void* arg, int compare(const ITEM* item1, const ITEM* item2, const void* arg))
 {
 	assert(list!=NULL);
 	int i, size;
@@ -201,16 +201,24 @@ void  list_sort (List* list, const void* arg, int compare(const void* key1, cons
 			end = second;
 			while(first != end || second != stop)
 			{
-				if(second == stop || (first != end && compare( nodeToKey(first), nodeToKey(second), arg)<=0))
-				     { node = first; first = first->next; }
-				else { node = second; second = second->next; }
-				if(tail) tail->next = node;
-				else head = node;
+				if(second == stop
+				|| (first != end
+				&& compare(nodeToItem(first), nodeToItem(second), arg)<=0))
+				{
+					node = first;
+					first = first->next;
+				}
+				else {
+					node = second;
+					second = second->next;
+				}
+				if(!tail) head = node;
+				else tail->next = node;
 				tail = node;
 			}
 
 			// fix the list links for head->prev and tail->next.
-			if(start==NULL) root = head;
+			if(!start) root = head;
 			else start->next = head;
 			tail->next = stop;
 

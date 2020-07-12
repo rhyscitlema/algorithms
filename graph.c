@@ -155,7 +155,7 @@ const char* skipComment1 (const char* str)
 }
 
 static inline bool isSpace (char c)
-{ return (c==' ' || c=='\t' || c=='\r' || c=='\n' || c==0xA0); }
+{ return (c==' ' || c=='\t' || c=='\r' || c=='\n' || c=='\160'); }
 
 const char* nextWord (const char* str)
 {
@@ -422,7 +422,7 @@ void minimum_spanning_tree (EdgeP edge)
 
 #define convert(a) ((const_EdgeP)((const int*)a-1))
 
-static int sssp_heap_node_compare (const void* a, const void* b, const void* arg)
+static int sssp_heap_node_compare (const ITEM* a, const ITEM* b, const void* arg)
 {
 	cost r = convert(a)->c - convert(b)->c;
 	return (r<0) ? -1 : (r>0) ? +1 : 0;
@@ -451,9 +451,16 @@ EdgeP single_source_shortest_path (const_AdjaP adja, int s)
 	/* using Dijkstra's algorithm O(E log V)-time */
 	if(positive)
 	{
-		Heap _heap = { NULL, 0, V, true, NULL, sssp_heap_node_compare };
+		Heap _heap = {
+			.data = NULL,
+			.size = 0,
+			.capacity = V,
+			.indexed = true,
+			.arg = NULL,
+			.compare = sssp_heap_node_compare
+		};
 		Heap *heap = &_heap;
-		heap->data = (void**)malloc(V*sizeof(void*));
+		heap->data = (ITEM**)malloc(V*sizeof(ITEM*));
 
 		heap_push(heap, &path[s].v);
 		path[s].u = s;
@@ -637,7 +644,7 @@ typedef struct {
 } mmug;
 
 /* compare count of free adjacent vertexes */
-static int mmug_heap_node_compare (const void* a, const void* b, const void* arg)
+static int mmug_heap_node_compare (const ITEM* a, const ITEM* b, const void* arg)
 { return ( ((const mmug*)a)->c - ((const mmug*)b)->c ); }
 
 
@@ -656,7 +663,7 @@ EdgeP maximum_matching_unweighted (const_AdjaP adja, bool skipPart1)
 	m = (1+V)*(sizeof(int)+sizeof(mmug)+sizeof(void*));
 	int* match = (int*)malloc(m);   // m = total memory needed
 	mmug* count = (mmug*)(match+1+V);
-	void** hdata = (void**)(count+1+V);
+	ITEM** hdata = (ITEM**)(count+1+V);
 
 	if(match==NULL) return NULL;    // if failed to allocate memory
 	for(u=1; u<=V; u++) match[u]=0; // else initialise main array
@@ -668,7 +675,14 @@ EdgeP maximum_matching_unweighted (const_AdjaP adja, bool skipPart1)
 	if(!skipPart1) {
 
 	// initialise the heap with all vertexes
-	Heap _heap = { hdata, 0, V, true, NULL, mmug_heap_node_compare };
+	Heap _heap = {
+		.data = hdata,
+		.size = 0,
+		.capacity = V,
+		.indexed = true,
+		.arg = NULL,
+		.compare = mmug_heap_node_compare
+	};
 	Heap *heap = &_heap;
 	for(u=1; u<=V; u++)
 	{
@@ -910,13 +924,13 @@ void DFS_traversal (const_AdjaP adja, int rootVertex)
 
 
 int binary_search (
-	int (*compare)(const void* key, const void* array, int index),
-	const void* key, const void* array, int low, int high)
+	int (*compare)(const void* item, const void* array, int index),
+	const void* item, const void* array, int low, int high)
 {
 	while(low<=high)
 	{
 		int middle = (low+high)/2;
-		int i = compare(key, array, middle);
+		int i = compare(item, array, middle);
 		if(i<0) high = middle-1;
 		else if(i>0) low = middle+1;
 		else return middle;

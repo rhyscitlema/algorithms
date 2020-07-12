@@ -4,7 +4,7 @@
 
 OUTPUT_FILE = libalgo.a
 
-OBJECT_FILES = avl.o \
+OBJECT_FILES = tree.o \
                list.o \
                heap.o \
                graph.o \
@@ -37,7 +37,7 @@ clean:
 
 #-------------------------------------------------
 
-avl.o: avl.c avl.h
+tree.o: tree.c tree.h
 	$(CC) $(CC_FLAGS) -c -o $@ $<
 
 list.o: list.c list.h

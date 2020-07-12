@@ -80,10 +80,10 @@ EdgeP maximum_matching_unweighted (const_AdjaP adjaList, bool skipPart1);
 
 // Alternative to the bsearch() from <stdlib.h>.
 // Extra argument to compare() may be passed
-// by using a pointer location just before key.
+// by using a pointer location just before item.
 int binary_search (
-	int (*compare)(const void* key, const void* array, int index),
-	const void* key, const void* array, int low, int high);
+	int (*compare)(const void* item, const void* array, int index),
+	const void* item, const void* array, int low, int high);
 
 #endif
 

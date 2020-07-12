@@ -29,8 +29,8 @@ static void list_print (List* list)
 	printf("\n----------------------------- size = %ld\n", list->size);
 }
 
-static int node_compare (const void* key1, const void* key2, const void* arg)
-{ return strcmp((const char*)key1, (const char*)key2); }
+static int node_compare (const ITEM* item1, const ITEM* item2, const void* arg)
+{ return strcmp( (const char*)item1, (const char*)item2 ); }
 
 
 int main()
@@ -40,10 +40,10 @@ int main()
 	enum OPR opr=0;
 
 	printf("--------------------------------------------\n");
-	printf("| Enter: opr=<opr> <key> <key> ... quit    |\n");
+	printf("| Enter: opr=<opr> <item> <item> ... quit    |\n");
 	printf("| <opr>: find, sort, del, headpush,        |\n");
 	printf("         tailpush, headpop, tailpop        |\n");
-	printf("| <key>: a string with no space.           |\n");
+	printf("| <item>: a string with no space.           |\n");
 	printf("| Example: opr=headpush pen paper book     |\n");
 	printf("--------------------------------------------\n");
 	printf(": ");
@@ -66,19 +66,24 @@ int main()
 		else
 		{
 			int len = strlen(str)+1;
-			void* key2;
+			ITEM* item2;
 			switch(opr)
 			{
-			case FIND: key2 = list_find(&list, NULL, node_compare, str); break;
-			case SORT: list_sort(&list, NULL, node_compare); key2=str; break;
-			case HEADPUSH: key2 = list_new(str, len); list_head_push(&list, key2); break;
-			case TAILPUSH: key2 = list_new(str, len); list_tail_push(&list, key2); break;
-			case HEADPOP: key2 = list_head_pop(&list); if(key2) list_delete(NULL, key2); break;
-			case TAILPOP: key2 = list_tail_pop(&list); if(key2) list_delete(NULL, key2); break;
-			case DEL: key2 = list_find(&list, NULL, node_compare, str); if(key2) list_delete(&list, key2); break;
+			case FIND: item2 = list_find(&list, NULL, node_compare, str); break;
+			case SORT: list_sort(&list, NULL, node_compare); item2 = str; break;
+
+			case HEADPUSH: item2 = list_new(str, len); list_head_push(&list, item2); break;
+			case TAILPUSH: item2 = list_new(str, len); list_tail_push(&list, item2); break;
+
+			case HEADPOP: item2 = list_head_pop(&list); if(item2) list_delete(NULL, item2); break;
+			case TAILPOP: item2 = list_tail_pop(&list); if(item2) list_delete(NULL, item2); break;
+
+			case DEL: item2 = list_find(&list, NULL, node_compare, str); if(item2) list_delete(&list, item2); break;
 			}
-			if(opr!=FIND && key2!=NULL) list_print(&list);
-			else printf("%s\n", (key2 ? "success" : "failure"));
+			if(opr!=FIND && item2!=NULL)
+				list_print(&list);
+			else
+				printf("%s\n", (item2 ? "success" : "failure"));
 		}
 	}
 	list_free(&list);

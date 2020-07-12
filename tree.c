@@ -1,12 +1,12 @@
 /*
-	avl.c
+	tree.c
 
 	Provided by Rhyscitlema
 	@ http://rhyscitlema.com
 
 	USE AT YOUR OWN RISK!
 */
-#include "avl.h"
+#include "tree.h"
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
@@ -21,124 +21,130 @@
 #endif
 
 
-static inline void* getkey (AVL*  avl) { return avl ? avl+1 : NULL; }
+static inline ITEM* getItem (TreeNode* node) { return node ? (ITEM*)(node+1) : NULL; }
 
-static inline AVL* getnode (void* key) { return key ? (AVL*)key-1 : NULL; }
-
-
-void* avl_left   (void* avl) { return avl ? getkey(getnode(avl)->left)   : NULL; }
-
-void* avl_right  (void* avl) { return avl ? getkey(getnode(avl)->right)  : NULL; }
-
-void* avl_parent (void* avl) { return avl ? getkey(getnode(avl)->parent) : NULL; }
-
-void* avl_root (AVLT* tree) { return getkey(tree->root); }
+static inline TreeNode* getNode (ITEM* item) { return item ? ((TreeNode*)item)-1 : NULL; }
 
 
-void* avl_min (AVLT* tree)
+ITEM* tree_left   (ITEM* item) { return item ? getItem(getNode(item)->left)   : NULL; }
+
+ITEM* tree_right  (ITEM* item) { return item ? getItem(getNode(item)->right)  : NULL; }
+
+ITEM* tree_parent (ITEM* item) { return item ? getItem(getNode(item)->parent) : NULL; }
+
+ITEM* tree_root (Tree* tree) { return getItem(tree->root); }
+
+
+ITEM* tree_first (Tree* tree)
 {
-	AVL* avl = tree->root;
-	if(!avl) return NULL;
-	while(avl->left)
-	avl = avl->left;
-	return getkey(avl);
+	TreeNode* node = tree->root;
+	if(node){
+		while(node->left)
+			node = node->left;
+	} return getItem(node);
 }
 
-void* avl_max (AVLT* tree)
+ITEM* tree_last (Tree* tree)
 {
-	AVL* avl = tree->root;
-	if(!avl) return NULL;
-	while(avl->right)
-	avl = avl->right;
-	return getkey(avl);
+	TreeNode* node = tree->root;
+	if(node){
+		while(node->right)
+			node = node->right;
+	} return getItem(node);
 }
 
 
 
-void* avl_next (void* _avl)
+ITEM* tree_next (ITEM* item)
 {
-	AVL* avl = getnode(_avl);
-	if(!avl) return NULL;
-	if(avl->right)
+	TreeNode* node = getNode(item);
+	if(node)
 	{
-		avl = avl->right;
-		while(avl->left)
-		avl = avl->left;
+		if(node->right)
+		{
+			node = node->right;
+			while(node->left)
+				node = node->left;
+		}
+		else while(true)
+		{
+			TreeNode* t = node;
+			node = node->parent;
+			if(!node || node->left==t) break;
+		}
 	}
-	else while(1)
+	return getItem(node);
+}
+
+ITEM* tree_prev (ITEM* item)
+{
+	TreeNode* node = getNode(item);
+	if(node)
 	{
-		AVL* tavl = avl;
-		avl = avl->parent;
-		if(!avl || avl->left==tavl) break;
+		if(node->left)
+		{
+			node = node->left;
+			while(node->right)
+				node = node->right;
+		}
+		else while(true)
+		{
+			TreeNode* t = node;
+			node = node->parent;
+			if(!node || node->right==t) break;
+		}
 	}
-	return getkey(avl);
+	return getItem(node);
 }
 
-void* avl_prev (void* _avl)
+
+
+ITEM* tree_new (const ITEM* item, unsigned int itemsize)
 {
-	AVL* avl = getnode(_avl);
-	if(!avl) return NULL;
-	if(avl->left)
-	{
-		avl = avl->left;
-		while(avl->right)
-		avl = avl->right;
-	}
-	else while(1)
-	{
-		AVL* tavl = avl;
-		avl = avl->parent;
-		if(!avl || avl->right==tavl) break;
-	}
-	return avl;
+	if(itemsize<=0) return NULL;
+	unsigned int size = sizeof(TreeNode) + itemsize;
+
+	TreeNode* node = (TreeNode*)_malloc(size, "TREE_NODE");
+	memset(node, 0, size);
+	node->itemsize = itemsize;
+
+	ITEM* item2 = getItem(node);
+	if(item && item2) memcpy(item2, item, itemsize);
+	return item2;
 }
 
-
-
-void* avl_new (const void* key1, unsigned int keysize)
+static void tree_free_node (TreeNode* node)
 {
-	if(keysize<=0) return NULL;
-	unsigned int size = sizeof(AVL) + keysize;
-	AVL* avl = (AVL*)_malloc(size, "AVL_NODE");
-	memset(avl, 0, size);
-	avl->keysize = keysize;
-	void* key2 = getkey(avl);
-	if(key1 && key2) memcpy(key2, key1, keysize);
-	return key2;
+	unsigned int size = sizeof(*node) + node->itemsize;
+	memset(node, 0, size);
+	_free(node, "TREE_NODE");
 }
 
-static void avl_remove (AVL* avl)
+static void tree_free_do (TreeNode* node)
 {
-	unsigned int size = sizeof(AVL) + avl->keysize;
-	memset(avl, 0, size);
-	_free(avl, "AVL_NODE");
+	if(node==NULL) return;
+	tree_free_do(node->left);
+	tree_free_do(node->right);
+	tree_free_node(node);
 }
 
-static void avl_free_r (AVL* avl)
-{
-	if(avl==NULL) return;
-	avl_free_r(avl->left);
-	avl_free_r(avl->right);
-	avl_remove(avl);
-}
-
-void avl_free (AVLT* tree)
+void tree_free (Tree* tree)
 {
 	assert(tree!=NULL);
-	avl_free_r (tree->root);
-	avl_clear(tree);
+	tree_free_do(tree->root);
+	tree_clear(tree);
 }
 
 
 
-static bool rebalance (AVLT* tree, AVL* node)
+static bool rebalance (Tree* tree, TreeNode* node)
 {
-	AVL *pnode, *tnode, *snode;
+	TreeNode *pnode, *tnode, *snode;
 	int l = (node->left ) ? node->left->height  : 0;
 	int r = (node->right) ? node->right->height : 0;
 	node->height = 1 + (l>r?l:r);
 
-	if(l-r>1)       // if left is longer
+	if(l-r > 1)     // if left is longer
 	{
 		tnode = node->left;
 		snode = tnode->right;
@@ -171,7 +177,7 @@ static bool rebalance (AVLT* tree, AVL* node)
 		node->height -= 2;
 		return true;
 	}
-	if(r-l>1)       // if right is longer
+	if(r-l > 1)     // if right is longer
 	{
 		tnode = node->right;
 		snode = tnode->left;
@@ -209,107 +215,105 @@ static bool rebalance (AVLT* tree, AVL* node)
 
 
 
-void* avl_do (
-	enum AVL_OPR OPR,
-	AVLT* tree,
-	const void* key1,
-	unsigned int keysize,
+ITEM* tree_do (
+	enum TREE_OPR OPR,
+	Tree* tree,
+	const ITEM* item1,
+	unsigned int itemsize,
 	const void* arg,
-	int (*compare) (const void* key1, const void* key2, const void* arg))
+	int (*compare) (const ITEM* item1, const ITEM* item2, const void* arg))
 {
 	assert(tree && (!tree->root == !tree->size));
-	if(!keysize) keysize = tree->keysize;
+	if(!itemsize) itemsize = tree->itemsize;
 	if(!arg) arg = tree->arg;
 	if(!compare) compare = tree->compare;
-	if(!compare || !key1) return NULL;
-	void* key2;
+	if(!compare || !item1) return NULL;
 
-	AVL* node = tree->root;
+	TreeNode* node = tree->root;
 	if(node==NULL)
 	{
-		if(OPR==AVL_ADD || OPR==AVL_INS || OPR==AVL_PUT)
+		if(OPR==TREE_ADD
+		|| OPR==TREE_INS
+		|| OPR==TREE_PUT)
 		{
-			if(OPR==AVL_PUT) key2 = (void*)(size_t)key1;
-			else{
-				key2 = avl_new(key1, keysize);
-				if(!key2) return NULL;
+			ITEM* item;
+			if(OPR==TREE_PUT)
+				item = (ITEM*)(size_t)item1;
+			else item = tree_new(item1, itemsize);
+
+			if(item){
+				node = getNode(item);
+				node->height = 1;
+				tree->root = node;
+				tree->size++;
 			}
-			node = getnode(key2);
-			node->height = 1;
-			tree->root = node;
-			tree->size++;
 		}
 		return NULL;
 	}
 
-	bool found=0;
+	ITEM* item2=NULL;
 	int i=0;
-	while(1)
+	while(true)
 	{
-		key2 = getkey(node);
-		i = compare(key1, key2, arg);
-		if(!found && !i) found=1;
-		if(i<0)
+		item2 = getItem(node);
+		i = compare(item1, item2, arg);
+
+		if(i<0) // if item1 < item2
 		{
 			if(node->left==NULL) break;
 			else node = node->left;
 		}
-		else if(i>0 || OPR==AVL_INS)
+		else if(i>0 // if item1 > item2,
+		|| OPR==TREE_INS // or do insert
+		|| OPR==TREE_PUT)
 		{
 			if(node->right==NULL) break;
 			else node = node->right;
 		}
-		else if(OPR==AVL_DEL) break;
-		else return key2;
+		else break;
 	}
 
-	if(OPR==AVL_CEIL)
+	if((OPR==TREE_ADD && i!=0)
+	|| OPR==TREE_INS
+	|| OPR==TREE_PUT)
 	{
-		if(i>0) return avl_next(getkey(node));
-		else return getkey(node);
-	}
+		ITEM* item;
+		if(OPR==TREE_PUT)
+			item = (ITEM*)(size_t)item1;
+		else item = tree_new (item1, itemsize);
 
-	if(OPR==AVL_FLOOR)
-	{
-		if(i<0) return avl_prev(getkey(node));
-		else return getkey(node);
-	}
+		if(item){
+			tree->size++;
+			TreeNode* pnode = node;
 
-	if(OPR==AVL_ADD || OPR==AVL_INS || OPR==AVL_PUT)
-	{
-		if(OPR==AVL_PUT) key2 = (void*)(size_t)key1;
-		else{
-			key2 = avl_new (key1, keysize);
-			if(!key2) return NULL;
+			node = getNode(item);
+			node->parent = pnode;
+			node->height = 1;
+
+			if(i<0) pnode->left  = node;
+			else    pnode->right = node;
+
+			do{ if(rebalance(tree, pnode)) break;
+				pnode = pnode->parent;
+			} while(pnode);
 		}
-		tree->size++;
-
-		AVL* pnode = node;
-		node = getnode(key2);
-		node->parent = pnode;
-		node->height = 1;
-		if(i<0) pnode->left  = node;
-		else    pnode->right = node;
-
-		do{ if(rebalance(tree, pnode)) break;
-			pnode = pnode->parent;
-		} while(pnode);
 	}
+	else if(OPR==TREE_REM) tree_remove(tree, item2);
+	else if(OPR==TREE_DEL) tree_delete(tree, item2);
 
-	else if(OPR==AVL_DEL && found)
-		avl_delete(tree, getkey(node));
+	else if(OPR==TREE_CEIL ) return i>0 ? tree_next(item2) : item2;
+	else if(OPR==TREE_FLOOR) return i<0 ? tree_prev(item2) : item2;
 
-	return (void*)found;
+	return i==0 ? item2 : NULL;
 }
 
 
 
-void avl_delete (AVLT* tree, void* avl)
+static void tree_delete_do (Tree* tree, ITEM* item, bool keepdata)
 {
-	if(avl==NULL) return;
-	AVL *node = getnode(avl);
-	AVL *tnode, *snode;
-
+	TreeNode *node, *pnode, *tnode, *snode;
+	if(item==NULL) return;
+	node = getNode(item);
 	if(tree)
 	{
 		if(node->left)
@@ -328,7 +332,7 @@ void avl_delete (AVLT* tree, void* avl)
 		}
 		else { tnode = node; snode = NULL; }
 
-		AVL* pnode = tnode->parent;
+		pnode = tnode->parent;
 		if(pnode==NULL) {
 			if(tree->root == node)
 				tree->root = NULL;
@@ -360,12 +364,22 @@ void avl_delete (AVLT* tree, void* avl)
 		}
 		tree->size--;
 	}
-	avl_remove(node);
+	if(!keepdata) tree_free_node(node);
+	else memset(node, 0, sizeof(*node));
+}
+
+void tree_remove (Tree* tree, ITEM* item) { tree_delete_do (tree, item, true ); }
+void tree_delete (Tree* tree, ITEM* item) { tree_delete_do (tree, item, false); }
+
+void tree_update (Tree* tree, ITEM* item)
+{
+	tree_remove(tree, item);
+	tree_do(TREE_PUT, tree, item, 0,0,0);
 }
 
 
 
-static long node_valid (const AVL* node)
+static long node_valid (const TreeNode* node)
 {
 	assert(node!=NULL);
 	if(!node) return 0;
@@ -384,7 +398,7 @@ static long node_valid (const AVL* node)
 	return l+r+1;
 }
 
-int avl_valid (const AVLT* tree)
+int tree_valid (const Tree* tree)
 {
 	if(!tree->size && !tree->root) return true;
 	if(!tree->size || !tree->root) return false;

@@ -13,140 +13,167 @@
 #include <assert.h>
 
 
-#define INDEX_UPDATE if(heap->indexed) *(int*)data[i] = i;
+#define HDATA(level) heap->data[(level)-1]
 
-static bool update_downward (Heap* heap, void* node, int i)
+#define INDEX_UPDATE \
+	if(heap->indexed) \
+		*(int*)HDATA(level) = level; \
+
+static bool update_downward (Heap* heap, ITEM* node, int level)
 {
-	void** data = heap->data;
-	while(i>1)
-	{
-		if(heap->node_compare(node, data[i/2], heap->arg) < 0)
+	do{
+		if(level < 2) break;
+		int parent = level/2;
+
+		if(heap->compare(node, HDATA(parent), heap->arg) < 0)
 		{
-			data[i] = data[i/2];
+			HDATA(level) = HDATA(parent);
 			INDEX_UPDATE
-			i = i/2;
+			level = parent;
+			continue;
 		}
-		else break;
-	}
-	if(data[i]==node) return 0; // if no update
-	data[i] = node;
+	} while(false);
+	if(HDATA(level)==node) // if no update
+		return false;
+	HDATA(level) = node;
 	INDEX_UPDATE
-	return 1;
+	return true;
 }
 
-static bool update_upward (Heap* heap, void* node, int i)
+static bool update_upward (Heap* heap, ITEM* node, int level)
 {
-	void** data = heap->data;
 	int size = heap->size;
-	while(1)
-	{
-		if(i*2 > size) break;
+	do{
+		int left  = level*2+0;
+		int right = level*2+1;
+		if(left > size) break;
 
-		if(i*2 == size
-		|| heap->node_compare(data[i*2], data[i*2+1], heap->arg)<0)
+		if(left == size
+		|| heap->compare(HDATA(left), HDATA(right), heap->arg) < 0)
 		{
-			if(heap->node_compare(data[i*2], node, heap->arg)<=0)
+			if(heap->compare(node, HDATA(left), heap->arg) >= 0)
 			{
 				// shift left child
-				data[i] = data[i*2];
+				HDATA(level) = HDATA(left);
 				INDEX_UPDATE
-				i = i*2;
+				level = left;
 				continue;
 			}
 		}
 		else
 		{
-			if(heap->node_compare(data[i*2+1], node, heap->arg)<=0)
+			if(heap->compare(node, HDATA(right), heap->arg) >= 0)
 			{
 				// shift right child
-				data[i] = data[i*2+1];
+				HDATA(level) = HDATA(right);
 				INDEX_UPDATE
-				i = i*2+1;
+				level = right;
 				continue;
 			}
 		}
-		break;
-	}
-	if(data[i]==node) return 0; // if no update
-	data[i] = node;
+	} while(false);
+	if(HDATA(level)==node) // if no update
+		return false;
+	HDATA(level) = node;
 	INDEX_UPDATE
-	return 1;
+	return true;
 }
 
-void heap_push (Heap* heap, void* node)
+
+void heap_push (Heap* heap, ITEM* node)
 {
 	assert(heap!=NULL);
 	if(!heap) return;
-	int i = ++heap->size;
-	heap->data[i] = node;
-	if(heap->indexed) *(int*)node = i;
-	update_downward(heap, node, i);
+
+	int level = ++heap->size;
+	HDATA(level) = node;
+	if(heap->indexed) *(int*)node = level;
+
+	update_downward(heap, node, level);
 }
 
-void* heap_pop (Heap* heap)
+ITEM* heap_pop (Heap* heap)
 {
 	assert(heap!=NULL);
 	if(!heap) return NULL;
 	if(heap->size <= 0) return NULL;
-	void* root = heap->data[1];
+
+	ITEM* root = HDATA(1);
 	if(heap->indexed) *(int*)root = -1;
+
 	int size = heap->size--;
-	void* node = heap->data[size];
+	ITEM* node = HDATA(size);
+
 	update_upward(heap, node, 1);
 	return root;
 }
 
-void heap_remove (Heap* heap, void* node)
+void heap_remove (Heap* heap, ITEM* node)
 {
 	assert(heap && node && heap->indexed);
 	if(!(heap && node && heap->indexed)) return;
-	int i = *(int*)node;
-	if(i<0) return;
-	*(int*)node = -1;
+
+	int level = *(int*)node;
+	assert(0 < level && level < heap->size);
+	if(!(0 < level && level < heap->size)) return;
+	*(int*)node = -1; // set to invalid
+
 	int size = heap->size--;
-	node = heap->data[size];
-	update_upward(heap, node, i);
+	node = HDATA(size);
+	update_upward(heap, node, level);
 }
 
-void heap_update (Heap* heap, void* node)
+void heap_update (Heap* heap, ITEM* node)
 {
 	assert(heap && node && heap->indexed);
 	if(!(heap && node && heap->indexed)) return;
-	int i = *(int*)node;
-	if(i<0) return;
-	if(!update_downward(heap, node, i))
-		update_upward(heap, node, i);
+
+	int level = *(int*)node;
+	assert(0 < level && level < heap->size);
+	if(!(0 < level && level < heap->size)) return;
+
+	if(!update_downward(heap, node, level))
+		update_upward(heap, node, level);
 }
 
 
-void heap_append (Heap* heap, void* node)
+void heap_append (Heap* heap, ITEM* node)
 {
 	heap_push(heap, node);
 }
 
-void heap_heapify (Heap* heap)
+void heap_heapify (Heap* heap) // TODO: implement this
 {}
 
 
-void* heap_find (const Heap* heap, void* value)
+ITEM* heap_find (const Heap* heap, ITEM* item)
 {
 	assert(heap!=NULL);
 	if(!heap) return NULL;
-	int i;
-	for(i=1; i <= heap->size; i++)
-		if(0==heap->node_compare(heap->data[i], value, heap->arg))
-			return heap->data[i];
+	int level;
+	for(level=1; level <= heap->size; level++)
+	{
+		ITEM* node = HDATA(level);
+		if(0==heap->compare(node, item, heap->arg))
+			return node;
+	}
 	return NULL;
 }
 
 
-void heap_print(const Heap* heap, int level, // root is at level 1, the minimum
-				void (*node_print) (const void* node, const void* arg, int level))
+void heap_print(
+	const Heap* heap,
+	int level, // root is at level 1, the minimum
+	void (*node_print) (int level, const ITEM* node, const void* arg))
 {
 	if(level < 1) level = 1;
-	if(level > heap->size) return;
-	heap_print (heap, level*2+1  , node_print);      // right subtree
-	node_print (heap->data[level], heap->arg, level);// print heap node
-	heap_print (heap, level*2+0  , node_print);      // left subtree
+	if(level <= heap->size)
+	{
+		int left  = level*2+0;
+		int right = level*2+1;
+		heap_print (heap, right, node_print);
+		node_print (level, HDATA(level), heap->arg);
+		heap_print (heap, left, node_print);
+	}
 }
 

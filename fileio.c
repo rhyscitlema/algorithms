@@ -19,7 +19,8 @@ Array file_to_array (const char* filename, Array old)
 		out.size = ftell (file);
 		fseek (file, 0, SEEK_SET);
 
-		if(out.size == 0x7FFFFFFF) out.size = -2;
+		if(out.size == 0x7FFFFFFF)
+			out.size = -2;
 		else if(old.size != -1)
 		{
 			out.data = (char*) realloc (old.data, out.size+1);
@@ -28,6 +29,7 @@ Array file_to_array (const char* filename, Array old)
 			{
 				free(out.data);
 				out.data = NULL;
+				out.size = -3;
 			}
 			else out.data[out.size] = 0;
 		}

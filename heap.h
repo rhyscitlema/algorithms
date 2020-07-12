@@ -1,35 +1,36 @@
 /*
-    heap.h
+	heap.h
 
-    A minimum-heap implementation.
+	A minimum-heap implementation.
 
-    Provided by Rhyscitlema
-    @ http://rhyscitlema.com
+	Provided by Rhyscitlema
+	@ http://rhyscitlema.com
 
-    USE AT YOUR OWN RISK!
+	USE AT YOUR OWN RISK!
 */
 #ifndef _HEAP_H
 #define _HEAP_H
 
 #include <stdbool.h>
 
-/** First initialise heap.size to = 0
-    and initialise heap.data to =
-    (void**) malloc (heap.maxSize * sizeof(void*));
+/**
+	First initialise heap.size to = 0
+	and initialise heap.data to =
+	(void**) malloc (heap.maxSize * sizeof(void*));
 
-    The functions will only change these two.
-    Set heap.node_compare to the callback function.
-    heap.arg is only passed to heap.node_compare().
+	The functions will only change these two.
+	Set heap.node_compare to the callback function.
+	heap.arg is only passed to heap.node_compare().
 
-    heap.indexed is explained in the documentation.
+	heap.indexed is explained in the documentation.
 */
-typedef struct _Heap
-{   void** data;
-    int size;
-    int maxSize;
-    bool indexed;
-    const void* arg;
-    int (*node_compare) (const void* a, const void* b, const void* arg);
+typedef struct _Heap {
+	void** data;
+	int size;
+	int maxSize;
+	bool indexed;
+	const void* arg;
+	int (*node_compare) (const void* a, const void* b, const void* arg);
 } Heap;
 
 void heap_push (Heap* heap, void* node);
@@ -46,8 +47,10 @@ void heap_heapify (Heap* heap);
 
 void* heap_find (const Heap* heap, void* value); // return NULL if not found
 
-void heap_print(const Heap* heap, int level, // root is at level 1, the minimum
-                void (*node_print) (const void* node, const void* arg, int level));
+void heap_print(
+	const Heap* heap,
+	int level, // root is at level 1, the minimum
+	void (*node_print) (const void* node, const void* arg, int level));
 
 #endif
 

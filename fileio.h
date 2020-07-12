@@ -1,5 +1,5 @@
 /*
-    fileio.h
+	fileio.h
 */
 
 typedef struct { char* data; long size; } Array;

@@ -1,67 +1,69 @@
 /*
-    avl.h
+	avl.h
 
-    Provided by Rhyscitlema
-    @ http://rhyscitlema.com
+	Provided by Rhyscitlema
+	@ http://rhyscitlema.com
 
-    USE AT YOUR OWN RISK!
+	USE AT YOUR OWN RISK!
 */
 #ifndef _AVL_H
 #define _AVL_H
 
 
-typedef struct _AVL
-{   struct _AVL *left;
-    struct _AVL *right;
-    struct _AVL *parent;
-    unsigned int keysize;
-    unsigned int height;
+typedef struct _AVL {
+	struct _AVL *left;
+	struct _AVL *right;
+	struct _AVL *parent;
+	unsigned int keysize;
+	unsigned int height;
 } AVL;
 
-typedef struct _AVLT    // AVL Tree
-{   AVL* root;          // root of tree
-    long size;          // number of nodes
+typedef struct _AVLT {  // AVL Tree
+	AVL* root;          // root of tree
+	long size;          // number of nodes
 
-    unsigned int keysize;
-    const void* arg;
-    int (*compare) (const void* key1, const void* key2, const void* arg);
+	unsigned int keysize;
+	const void* arg;
+	int (*compare) (const void* key1, const void* key2, const void* arg);
 } AVLT;
 
 static inline void avl_clear (AVLT *tree)
 { if(tree) { tree->root=0; tree->size=0; } }
 
 
-enum AVL_OPR
-{   AVL_FIND,   // find a key that equals given key
-    AVL_CEIL,   // find lowest key greater or equal
-    AVL_FLOOR,  // find highest key lesser or equal
-    AVL_ADD,    // add if not found, else return existing key2
-    AVL_INS,    // add even if found, if found return (void*)1
-    AVL_DEL,    // find one and delete, if found return (void*)1
-    AVL_PUT     // put the node obtained from a call to avl_new()
+enum AVL_OPR {
+	AVL_FIND,   // find a key that equals given key
+	AVL_CEIL,   // find lowest key greater or equal
+	AVL_FLOOR,  // find highest key lesser or equal
+	AVL_ADD,    // add if not found, else return existing key2
+	AVL_INS,    // add even if found, if found return (void*)1
+	AVL_DEL,    // find one and delete, if found return (void*)1
+	AVL_PUT     // put the node obtained from a call to avl_new()
 };
 
 
-/** If on very first operation then set *tree = {0}.
+/**
+	If on very first operation then set *tree = {0}.
 
-    'arg' is only passed to the compare() function.
-    'key1' is the given key, 'key2' is from existing node.
+	'arg' is only passed to the compare() function.
+	'key1' is the given key, 'key2' is from existing node.
 
-    If given key1 does not already exist then NULL is
-    returned, else if on AVL_INS or AVL_DEL then (void*)1
-    is returned, else the existing key2 is returned.
+	If given key1 does not already exist then NULL is
+	returned, else if on AVL_INS or AVL_DEL then (void*)1
+	is returned, else the existing key2 is returned.
 
-    When any of keysize, arg and compare is 0 or NULL, the
-    corresponding value from the AVLT-struct is used instead.
+	When any of keysize, arg and compare is 0 or NULL, the
+	corresponding value from the AVLT-struct is used instead.
 
-    keysize is ignored unless on AVL_ADD or AVL_INS.
+	keysize is ignored unless on AVL_ADD or AVL_INS.
 */
-void* avl_do (enum AVL_OPR OPR,
-              AVLT* tree,
-              const void* key1,
-              unsigned int keysize,
-              const void* arg,
-              int (*compare) (const void* key1, const void* key2, const void* arg));
+void* avl_do (
+	enum AVL_OPR OPR,
+	AVLT* tree,
+	const void* key1,
+	unsigned int keysize,
+	const void* arg,
+	int (*compare) (const void* key1, const void* key2, const void* arg));
 
 
 void  avl_free (AVLT* tree);    // given tree, free all nodes

@@ -1,24 +1,24 @@
 /*
-    list.h
+	list.h
 
-    Provided by Rhyscitlema
-    @ http://rhyscitlema.com
+	Provided by Rhyscitlema
+	@ http://rhyscitlema.com
 
-    USE AT YOUR OWN RISK!
+	USE AT YOUR OWN RISK!
 */
 #ifndef _LIST_H
 #define _LIST_H
 
 
-typedef struct _ListNode
-{   struct _ListNode *prev, *next;
-    unsigned int keysize;
+typedef struct _ListNode {
+	struct _ListNode *prev, *next;
+	unsigned int keysize;
 } ListNode;
 
-typedef struct _List    // double-linked list
-{   ListNode* head;     // head of list
-    ListNode* tail;     // tail of list
-    long size;          // number of nodes
+typedef struct _List {  // double-linked list
+	ListNode* head;     // head of list
+	ListNode* tail;     // tail of list
+	long size;          // number of nodes
 } List;
 
 static inline void list_clear (List *list)

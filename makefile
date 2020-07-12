@@ -49,3 +49,6 @@ heap.o: heap.c heap.h
 graph.o: graph.c graph.h heap.h
 	$(CC) $(CC_FLAGS) -c -o $@ $<
 
+fileio.o: fileio.c fileio.h
+	$(CC) $(CC_FLAGS) -c -o $@ $<
+

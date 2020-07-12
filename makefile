@@ -7,7 +7,8 @@ OUTPUT_FILE = libalgo.a
 OBJECT_FILES = avl.o \
                list.o \
                heap.o \
-               graph.o
+               graph.o \
+               fileio.o
 
 #-------------------------------------------------
 
@@ -18,7 +19,7 @@ CC = gcc
 AR = ar
 
 # compiler flags
-CC_FLAGS = -Wall -pedantic $(CFLAGS)
+CC_FLAGS = -Wall -std=c99 -pedantic $(CFLAGS)
 
 # archiver flags
 AR_FLAGS = -crs #$(ARFLAGS)

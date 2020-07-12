@@ -12,7 +12,7 @@
 
 typedef struct _ListNode
 {   struct _ListNode *prev, *next;
-    int keysize;
+    unsigned int keysize;
 } ListNode;
 
 typedef struct _List    // double-linked list
@@ -30,14 +30,16 @@ void* list_head (List* list);   // given list, get head node
 void* list_tail (List* list);   // given list, get tail node
 void* list_next (void* node);   // given node, get its next
 void* list_prev (void* node);   // given node, get its prev
-void* list_new (const void* key1, int keysize); // get a new node, use list_push later
+
+// get a new node, use list_push later, if(key1) then copy it.
+void* list_new (const void* key1, unsigned int keysize);
 
 void* list_head_pop  (List* list);              // given list, pop out the head node
 void* list_tail_pop  (List* list);              // given list, pop out the tail node
 void* list_node_pop  (List* list, void* node);  // given node, pop out of the list
 void  list_head_push (List* list, void* node);  // given node, push it as new head
 void  list_tail_push (List* list, void* node);  // given node, push it as new tail
-void  list_delete    (List* list, void* node);  // given node, delete it
+void  list_delete    (List* list, void* node);  // given node, delete it. list can be NULL
 
 void* list_find (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg), const void* key1);
 void  list_sort (List* list, const void* arg, int compare(const void* key1, const void* key2, const void* arg));

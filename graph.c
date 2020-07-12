@@ -15,7 +15,7 @@
 
 
 
-Adja* edge_list_to_adja_list (const Edge* edge)
+AdjaP edge_list_to_adja_list (const_EdgeP edge)
 {
     if(!edge) return NULL;
     int V = edge[0].u;
@@ -30,7 +30,7 @@ Adja* edge_list_to_adja_list (const Edge* edge)
     v = 1+V+E*2; // for the data at list pointers.
     if(directed) { u+=V; v+=V; }
 
-    next = (Adja*)malloc(u*sizeof(Adja) + v*sizeof(Edge));
+    next = (AdjaP)malloc(u*sizeof(Adja) + v*sizeof(Adge));
 
     dnex = (Adja)(next+u);
     prev = next; if(directed) prev += V;
@@ -87,14 +87,14 @@ Adja* edge_list_to_adja_list (const Edge* edge)
 
 
 
-Edge* adja_list_to_edge_list (const Adja* adja)
+EdgeP adja_list_to_edge_list (const_AdjaP adja)
 {
     if(!adja) return NULL;
     int V = AdjaV(adja);
     int E = AdjaE(adja);
     bool directed = AdjaD(adja);
 
-    Edge* edge = (Edge*)malloc((1+E)*sizeof(Edge));
+    EdgeP edge = (EdgeP)malloc((1+E)*sizeof(Edge));
     edge[0].u = V;
     edge[0].v = E;
     edge[0].c = directed;
@@ -102,11 +102,12 @@ Edge* adja_list_to_edge_list (const Adja* adja)
     int i, u, m;
     for(E=0, u=1; u<=V; u++)
     {
-        m = adja[u][0].v;
+        Adja U = AdjaU(adja,u);
+        m = U[0].v;
         for(i=1; i<=m; i++)
         {
-            int  v = adja[u][i].v;
-            cost c = adja[u][i].c;
+            int  v = U[i].v;
+            cost c = U[i].c;
             if(!directed && u>v) continue;
             E++;
             edge[E].u = u;
@@ -119,86 +120,159 @@ Edge* adja_list_to_edge_list (const Adja* adja)
 
 
 
-#define isSpace(c) (c==' ' || c=='\t' || c=='\r' || c=='\n')
-#define nextWord(str) { while(!isSpace(*str) && *str) str++; \
-                        while( isSpace(*str)) str++; }
+const char* strNext1 (const char* str)
+{
+    while(true) // not a loop
+    {
+        if(!str || !*str) break;
+        if(*str != '#')
+        {
+            str++;
+            if(!*str) break;
+            if(*str != '#') break;
+        }
+        str++;
+        if(!*str) break;
+        if(*str != '{')
+        {
+            // skip till '\n' is found, excluding it
+            while(*str && *str != '\n') str++;
+            break;
+        }
+        // else: skip till "}#" is found, including it
+        char a, b;
+        int level=1;
+        str++;
+        b = *str;
+        while(true)
+        {
+            str++;
+            if(!*str) break;
+            a = b;
+            b = *str;
+            if(a=='#' && b=='{') level++;
+            if(a=='}' && b=='#')
+            {
+                if(--level==0)
+                { str++; break; }
+            }
+        }
+        break;
+    }
+    return str;
+}
 
-Edge* load_edge_list (const char* str)
+static inline bool isSpace(char c)
+{ return (c==' ' || c=='\t' || c=='\r' || c=='\n'); }
+
+const char* nextWord (const char* str)
+{
+    while(!isSpace(*str) && *str) str = strNext1(str);
+    while( isSpace(*str)) str = strNext1(str);
+    return str;
+}
+
+
+
+EdgeP load_edge_list (const char* str)
 {
     if(!str) return NULL;
     int i, V, E;
     bool directed;
     bool weighted;
 
-    while(isSpace(*str)) str++;
-    if(0<=*str && *str<='9')
-    {
-        sscanf(str, "%d", &i);
-        while(i>=0 && *str!=0)
-        { if(*str=='\n') i--; str++; }
-    }
-    else return NULL;
-    if(*str==0) return NULL;
+    if(*str=='#') str = strNext1(str);
+    while(isSpace(*str)) str = strNext1(str);
 
-    while(isSpace(*str)) str++;
-    if(sscanf(str, "%d", &V)!=1) return NULL; nextWord(str);
-    if(sscanf(str, "%d", &E)!=1) return NULL; nextWord(str);
-    if(sscanf(str, "%d", &i)!=1) return NULL; nextWord(str); directed=i;
-    if(sscanf(str, "%d", &i)!=1) return NULL; nextWord(str); weighted=i;
-    if(sscanf(str, "%d", &i)!=1) return NULL; nextWord(str);
+    if(!*str || sscanf(str, "%d", &V)!=1) return NULL; str=nextWord(str);
+    if(!*str || sscanf(str, "%d", &E)!=1) return NULL; str=nextWord(str);
+    if(!*str || sscanf(str, "%d", &i)!=1) return NULL; str=nextWord(str); directed=i;
+    if(!*str || sscanf(str, "%d", &i)!=1) return NULL; str=nextWord(str); weighted=i;
+    if(!*str || sscanf(str, "%d", &i)!=1) return NULL; str=nextWord(str);
+    if(V<0 || E<0) return NULL;
 
-    Edge* edge = (Edge*)malloc((1+E)*sizeof(Edge));
-    edge[0].u = V;
-    edge[0].v = E;
+    EdgeP edge = (EdgeP)malloc((1+E)*sizeof(Edge));
+    edge[0].u = V;  // V = number of vertexes
+    edge[0].v = E;  // E = number of edges
     edge[0].c = directed;
 
     if(i==0) // if an edge_list
     {
         for(i=1; i<=E; i++)
         {
-            sscanf(str, "%d %d", &edge[i].u, &edge[i].v);
-            nextWord(str); nextWord(str);
-            if(weighted) { sscanf(str, "%ld", &edge[i].c); nextWord(str); }
-            else edge[i].c = 1;
+            sscanf(str, "%d", &edge[i].u); str=nextWord(str); // get source vertex u
+            sscanf(str, "%d", &edge[i].v); str=nextWord(str); // get sink vertex v
+            if(weighted)
+            {   sscanf(str, "%ld", &edge[i].c); // get edge cost c
+                str=nextWord(str);
+            } else edge[i].c = 1; // else mark as unweighted
         }
     }
-    else // else an adja_list
+    else if(i==1) // else an adja_list of source-to-sink vertexes
     {
         int t, u, m;
         for(E=0, t=1; t<=V; t++)
         {
-            sscanf(str, "%d %d", &u, &m);
-            nextWord(str); nextWord(str);
+            sscanf(str, "%d", &u); str=nextWord(str); // get source vertex u
+            sscanf(str, "%d", &m); str=nextWord(str); // get number of adjacent
             for(i=1; i<=m; i++)
             {
                 cost c=1;
                 int v;
-                sscanf(str, "%d", &v);
-                nextWord(str);
-                if(weighted) { sscanf(str, "%ld", &c); nextWord(str); }
+                sscanf(str, "%d", &v); // get sink vertex v
+                str=nextWord(str);
 
-                if(!directed && u>v) continue;
+                if(weighted)
+                {   sscanf(str, "%ld", &edge[i].c); // get edge cost c
+                    str=nextWord(str);
+                } else edge[i].c = 1; // else mark as unweighted
+
+                if(!directed && u>v) continue; // avoid redundant edges
                 E++;
-                edge[E].u = u;
+                edge[E].u = u;  // record loaded edge
                 edge[E].v = v;
                 edge[E].c = c;
             }
         }
     }
+    else assert(false && "Graph neither edge list nor adja list");
     return edge;
 }
 
-Adja* load_adja_list (const char* str)
+AdjaP load_adja_list (const char* str)
 {
-    Edge* edge = load_edge_list (str);
-    Adja* adja = edge_list_to_adja_list (edge);
+    EdgeP edge = load_edge_list (str);
+    AdjaP adja = edge_list_to_adja_list (edge);
     free(edge);
     return adja;
 }
 
 
+#ifndef HEADER
+#define graph_header "\n%d %d %d %d %d\n\n"
+#else
+#define graph_header
+    "#{\n"
+    "    This is a block comment: #{...}#\n"
+    "    A single-line comment has form: #...\n"
+    "    Vertex numbering starts from 1 not 0.\n"
+    "    Note the content structure as described.\n"
+    "}#\n"
+    "\n"
+    "%-5d # number of vertexes\n"
+    "%-5d # number of edges\n"
+    "\n"
+    "%d     # 1 if graph is directed, 0 otherwise\n"
+    "%d     # 1 if graph is weighted, 0 otherwise\n"
+    "\n"
+    "%d     # 0 if graph is given as an edge list, or,\n"
+    "      # 1 if graph is given as an adjacency list\n"
+    "      #      of source-to-sink vertexes.\n"
+    "\n";
+#endif
 
-char* print_edge_list (char* out, const Edge* edge)
+
+char* print_edge_list (char* out, const_EdgeP edge)
 {
     if(!out) return out;
     if(!edge) { *out=0; return out; }
@@ -211,22 +285,21 @@ char* print_edge_list (char* out, const Edge* edge)
 
     // check if any edge cost is not 1
     for(i=1; i<=E; i++) if(edge[i].c!=1) { weighted=1; break; }
-    char* str = out;
-    str += sprintf(str, "0\n%d %d %d %d 0\n\n", V, E, directed, weighted);
+
+    out += sprintf(out, graph_header, V, E, directed, weighted, 0);
 
     for(i=1; i<=E; i++)
     {
-        str += sprintf(str, "%d %d", edge[i].u, edge[i].v);
-        if(weighted) str += sprintf(str, " %ld", edge[i].c);
-        *str++ = '\n';
+        out += sprintf(out, "%d %d", edge[i].u, edge[i].v);
+        if(weighted) out += sprintf(out, " %ld", edge[i].c);
+        *out++ = '\n';
     }
-    *str=0;
+    *out=0;
     return out;
 }
 
 
-
-char* print_adja_list (char* out, const Adja* adja)
+char* print_adja_list (char* out, const_AdjaP adja)
 {
     if(!out) return out;
     if(!adja) { *out=0; return out; }
@@ -239,59 +312,61 @@ char* print_adja_list (char* out, const Adja* adja)
     // check if any edge cost is not 1
     for(u=1; u<=V; u++)
     {
-        m = adja[u][0].v;
-        for(i=1; i<=m; i++) if(adja[u][i].c!=1) break;
+        Adja U = AdjaU(adja,u);
+        m = U[0].v;
+        for(i=1; i<=m; i++) if(U[i].c!=1) break;
         if(i<=m) { weighted=1; break; }
     }
-    char* str = out;
-    str += sprintf(str, "0\n%d %d %d %d 1\n\n", V, E, directed, weighted);
+    out += sprintf(out, graph_header, V, E, directed, weighted, 1);
 
     // print adjacency list of source vertexes
     for(u=1; u<=V; u++)
     {
-        m = adja[u][0].v;
-        str += sprintf(str, "%d  %d ", u, m);
+        Adja U = AdjaU(adja,u);
+        m = U[0].v;
+        out += sprintf(out, "%d  %d ", u, m);
         for(i=1; i<=m; i++)
         {
-            str += sprintf(str, " %d", adja[u][i].v);
-            if(weighted) str += sprintf(str, " %ld ", adja[u][i].c);
+            out += sprintf(out, " %d", U[i].v);
+            if(weighted) out += sprintf(out, " %ld ", U[i].c);
         }
-        str += sprintf(str, "\n");
+        out += sprintf(out, "\n");
     }
 
     if(directed){ adja+=V; // if graph is directed
-    *str++ = '\n';
+    *out++ = '\n';
     // print adjacency list of sink vertexes
     for(u=1; u<=V; u++)
     {
-        m = adja[u][0].v;
-        str += sprintf(str, "%d  %d ", u, m);
+        Adja U = AdjaU(adja,u);
+        m = U[0].v;
+        out += sprintf(out, "%d  %d ", u, m);
         for(i=1; i<=m; i++)
         {
-            str += sprintf(str, " %d", adja[u][i].v);
-            if(weighted) str += sprintf(str, " %ld ", adja[u][i].c);
+            out += sprintf(out, " %d", U[i].v);
+            if(weighted) out += sprintf(out, " %ld ", U[i].c);
         }
-        str += sprintf(str, "\n");
+        out += sprintf(out, "\n");
     }}
     return out;
 }
 
 
 
-Edge* clone_edge_list (const Edge* edge)
+EdgeP clone_edge_list (const_EdgeP edge)
 {
     int E = edge[0].v;
     long size = (1+E)*sizeof(Edge);
-    Edge* out = (Edge*)malloc(size);
+    EdgeP out = (EdgeP)malloc(size);
     memcpy(out, edge, size);
     return out;
 }
 
-//Adja* clone_adja_list (const Adja* adja);
+//AdjaP clone_adja_list (const_AdjaP adja);
 
 
 
-void renumber_edge_list_vertexes (Edge* edge)
+void renumber_edge_list_vertexes (EdgeP edge)
 {
     int u, v, i, j=0;
     int V = edge[0].u;
@@ -309,11 +384,11 @@ void renumber_edge_list_vertexes (Edge* edge)
 
 static int compare_edges (const void* a, const void* b)
 {
-    cost r = ((const Edge*)a)->c - ((const Edge*)b)->c;
+    cost r = ((const_EdgeP)a)->c - ((const_EdgeP)b)->c;
     return (r<0) ? -1 : (r>0) ? +1 : 0;
 }
 
-void minimum_spanning_tree (Edge* edge)
+void minimum_spanning_tree (EdgeP edge)
 {
     int i, j;
     int u, v, k;
@@ -351,7 +426,7 @@ void minimum_spanning_tree (Edge* edge)
 /*********************************************************************************/
 
 
-#define convert(a) ((const Edge*)((const int*)a-1))
+#define convert(a) ((const_EdgeP)((const int*)a-1))
 
 static int sssp_heap_node_compare (const void* a, const void* b, const void* arg)
 {
@@ -359,22 +434,23 @@ static int sssp_heap_node_compare (const void* a, const void* b, const void* arg
     return (r<0) ? -1 : (r>0) ? +1 : 0;
 }
 
-Edge* single_source_shortest_path (const Adja* adja, int s)
+EdgeP single_source_shortest_path (const_AdjaP adja, int s)
 {
     int V = AdjaV(adja);
     int i, u, m;
     bool positive=true;
 
     if(s<1 || s>V) { printf("Error: 1 <= s=%d <= V=%d.\n", s, V); return NULL; }
-    Edge* path = (Edge*)malloc((1+V)*sizeof(Edge));
+    EdgeP path = (EdgeP)malloc((1+V)*sizeof(Edge));
     memset(path, 0, (1+V)*sizeof(Edge));
     //for(i=1; i<=V; i++) path[i].u = 0;
 
     /* check if any edge cost is negative */
     for(u=1; u<=V; u++)
     {
-        m = adja[u][0].v;
-        for(i=1; i<=m; i++) if(adja[u][i].c<0) break;
+        Adja U = AdjaU(adja,u);
+        m = U[0].v;
+        for(i=1; i<=m; i++) if(U[i].c<0) break;
         if(i<=m) { positive=false; break; }
     }
 
@@ -390,15 +466,17 @@ Edge* single_source_shortest_path (const Adja* adja, int s)
         path[s].c = 0;
         while(1)
         {
-            void* ptr;
-            if(!heap_pop(heap, &ptr)) break;
-            u = convert(ptr) - path; // get vertex value
+            void* hnode = heap_pop(heap);
+            if(!hnode) break; // if heap is empty then quit
 
-            m = adja[u][0].v;
+            u = convert(hnode) - path; // get vertex value
+
+            Adja U = AdjaU(adja,u);
+            m = U[0].v;
             for(i=1; i<=m; i++)
             {
-                int  v = adja[u][i].v;
-                cost c = adja[u][i].c + path[u].c; 
+                int  v = U[i].v;
+                cost c = U[i].c + path[u].c; 
 
                 if(path[v].u==0     // if a new vertex or
                 || path[v].c > c)   // if a better path
@@ -431,13 +509,12 @@ Edge* single_source_shortest_path (const Adja* adja, int s)
             while(l1--)
             {
                 u = a1[l1];
-                m = adja[u][0].v;
+                Adja U = AdjaU(adja,u);
+                m = U[0].v;
                 for(i=1; i<=m; i++)
                 {
-                    cost c;
-                    int v;
-                    v = adja[u][i].v;
-                    c = adja[u][i].c + path[u].c; 
+                    int  v = U[i].v;
+                    cost c = U[i].c + path[u].c; 
 
                     if(path[v].u==0     // if a new vertex or
                     || path[v].c > c)   // if a better path
@@ -484,17 +561,17 @@ Edge* single_source_shortest_path (const Adja* adja, int s)
 /*********************************************************************************/
 
 
-Edge** all_pairs_shortest_path (const Adja* adja)
+EdgeP* all_pairs_shortest_path (const_AdjaP adja) // TODO: use relative pointers
 {
     int V = AdjaV(adja);
     int i, j, k, fail=0;
 
-    i =   (1+V)*sizeof(Edge*);
+    i =   (1+V)*sizeof(EdgeP);
     j = V*(1+V)*sizeof(Edge);
-    Edge** path = (Edge**)malloc(i+j);
+    EdgeP* path = (EdgeP*)malloc(i+j);
     memset(path, 0, i+j);
 
-    Edge* edge = (Edge*)(path+1+V);
+    EdgeP edge = (EdgeP)(path+1+V);
     for(i=1; i<=V; i++) { path[i] = edge; edge += 1+V; }
     *(int*)path = V;
 
@@ -503,11 +580,12 @@ Edge** all_pairs_shortest_path (const Adja* adja)
     /* initialise matrix with edge costs */
     for(j=1; j<=V; j++)
     {
-        k = adja[j][0].v;
+        Adja U = AdjaU(adja,j);
+        k = U[0].v;
         for(i=1; i<=k; i++)
         {
-            int  v = adja[j][i].v;
-            cost c = adja[j][i].c;
+            int  v = U[i].v;
+            cost c = U[i].c;
             path[j][v].u = j;
             path[j][v].c = c;
         }
@@ -564,17 +642,15 @@ static int mmug_heap_node_compare (const void* a, const void* b, const void* arg
 { return ( ((const mmug*)a)->c - ((const mmug*)b)->c ); }
 
 
-/* Explanation of implemented algorithm at:
-   http://rhyscitlema.com/algorithms/maximum-bipartite-matching
-*/
-Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
+/* See http://rhyscitlema.com/algorithms/maximum-bipartite-matching */
+EdgeP maximum_matching_unweighted (const_AdjaP adja, bool skipPart1)
 {
     if(!adja) return NULL;
     int V = AdjaV(adja); // get V = number of vertexes
     int i, m, u, v;
 
-    const Adja* graph;
-    const Adja* prev = AdjaPrev(adja);
+    const_AdjaP graph;
+    const_AdjaP prev = AdjaPrev(adja);
     // adja = adjacency list of source-to-sink vertexes
     // prev = adjacency list of sink-from-source vertexes
 
@@ -598,18 +674,20 @@ Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
     for(u=1; u<=V; u++)
     {
         // get m = total number of adjacent vertexes
-        m = adja[u][0].v;
+        m = AdjaU(adja,u)[0].v;
         if(adja!=prev) // if a directed graph
-            m += prev[u][0].v;
+            m += AdjaU(prev,u)[0].v;
         count[u].c = m;
         if(m) heap_push(heap, &count[u].i);
     }
 
-    void* heapNode;
-    while(heap_pop(heap, &heapNode)) // while heap is not empty
+    while(1)
     {
+        void* hnode = heap_pop(heap);
+        if(!hnode) break; // if heap is empty then quit
+
         // get u = vertex with minimum free adjacent vertexes
-        u = (mmug*)heapNode - count;
+        u = (mmug*)hnode - count;
         if(count[u].c==0) continue; // if no free adjacent vertex then skip
         count[u].c=0;               // else mark u as removed from heap
 
@@ -617,10 +695,11 @@ Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
         graph = adja;               // start with 'adja' list
         while(true)
         {
-            m = graph[u][0].v;      // get number of adjacent vertexes
+            Adja U = AdjaU(graph,u);
+            m = U[0].v;             // get number of adjacent vertexes
             for(i=1; i<=m; i++)     // for every adjacent vertex
             {
-                v = graph[u][i].v;  // get adjacent vertex
+                v = U[i].v;         // get adjacent vertex
                 if(count[v].c>0)    // if is inside heap
                 {  count[v].c--;    // decrement count of free adjacent vertexes
                    heap_update(heap, &count[v].i); // update position in heap
@@ -645,10 +724,11 @@ Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
         graph = adja;               // start with 'adja' list
         while(true)
         {
-            m = graph[u][0].v;      // get number of adjacent vertexes
+            Adja U = AdjaU(graph,u);
+            m = U[0].v;             // get number of adjacent vertexes
             for(i=1; i<=m; i++)     // for every adjacent vertex
             {
-                v = graph[u][i].v;  // get adjacent vertex
+                v = U[i].v;         // get adjacent vertex
                 if(count[v].c>0)    // if is inside heap
                 {  count[v].c--;    // decrement count of free adjacent vertexes
                    heap_update(heap, &count[v].i); // update position in heap
@@ -692,10 +772,11 @@ Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
             graph = adja;           // start with 'adja' list
             while(true)
             {
-                m = graph[u][0].v;  // get number of adjacent vertexes
+                Adja U = AdjaU(graph,u);
+                m = U[0].v;  // get number of adjacent vertexes
                 for(i=1; i<=m; i++) // for every adjacent vertex
                 {
-                    v = graph[u][i].v;  // get adjacent vertex
+                    v = U[i].v;  // get adjacent vertex
                     int t = vfree[v];   // get t = free vertex which v is derived from
 
                     // check whether a new re-matching has been uncovered
@@ -737,7 +818,7 @@ Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
     }
 
     // allocate memory for the result graph
-    Edge *edge = (Edge*) malloc ((1+E)*sizeof(Edge));
+    EdgeP edge = (EdgeP) malloc ((1+E)*sizeof(Edge));
 
     // build the edge-list of the result graph
     for(E=0, u=1; u<=V; u++)
@@ -762,13 +843,13 @@ Edge* maximum_matching_unweighted (const Adja* adja, bool skipPart1)
 /*********************************************************************************/
 
 
-void DFS_traversal (const Adja* adjaList, int rootVertex)
+void DFS_traversal (const_AdjaP adja, int rootVertex)
 {
-    int V = AdjaV(adjaList);
+    int V = AdjaV(adja);
     int i, u, v, p;
     cost c;
 
-    Edge* stack   = (Edge*)malloc((0+V)*sizeof(Edge));
+    EdgeP stack   = (EdgeP)malloc((0+V)*sizeof(Edge));
     bool* visited = (bool*)malloc((1+V)*sizeof(bool));
     memset(visited, 0, (1+V)*sizeof(bool));
 
@@ -786,14 +867,15 @@ void DFS_traversal (const Adja* adjaList, int rootVertex)
         i = stack[p].v;
         while(true)
         {
+            Adja U = AdjaU(adja,u);
             // if no more v nodes for u
-            if(i > adjaList[u][0].v)
+            if(i > U[0].v)
             {
                 if(p==0) { p--; break; }
                 i = stack[p].c;
                 u = stack[p-1].u;
                 v = stack[p].u;
-                c = getEdgeOfAdjaList(adjaList,u,v)->c;
+                c = getEdgeInAdjaList(adja,u,v)->c;
 
                 // process node below
                 v = u*c*0; // nothing useful
@@ -803,7 +885,7 @@ void DFS_traversal (const Adja* adjaList, int rootVertex)
                 stack[p].c += i;
                 break;
             }
-            v = adjaList[u][i++].v;
+            v = U[i++].v;
             if(!visited[v])
             {
                 // first record position of next v

@@ -31,7 +31,7 @@ int main()
     enum AVL_OPR opr=0;
 
     printf("--------------------------------------------\n");
-    printf("| Enter: opr=<opr> <key1> <key2> ... quit  |\n");
+    printf("| Enter: opr=<opr> <key> <key> ... quit    |\n");
     printf("| <opr>: find, ceil, floor, add, ins, del. |\n");
     printf("| <key>: a string with no space.           |\n");
     printf("| Example: opr=add pen paper book          |\n");
@@ -56,7 +56,7 @@ int main()
         {
             void* key2 = avl_do (opr, &tree, str, strlen(str)+1, NULL, avl_compare);
 
-            if(key2==(void*)1) key2 = "FOUND";
+            if(key2 == (void*)1) key2 = "FOUND";
 
             printf("key1 = %s , key2 = %s\n", str, (char*)key2);
 
@@ -64,8 +64,9 @@ int main()
             {
                 printf("-----------------------------\n");
                 avl_print_tree(avl_root(&tree), 0);
-                printf("----------------------------- size = %d\n", tree.size);
+                printf("----------------------------- size = %ld\n", tree.size);
             }
+            if(!avl_valid(&tree)) printf("AVL tree data structure is invalid.\n");
         }
     }
     avl_free(&tree);

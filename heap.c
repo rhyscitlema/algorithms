@@ -34,7 +34,6 @@ static bool update_downward (Heap* heap, void* node, int i)
     return 1;
 }
 
-
 static bool update_upward (Heap* heap, void* node, int i)
 {
     void** data = heap->data;
@@ -74,7 +73,6 @@ static bool update_upward (Heap* heap, void* node, int i)
     return 1;
 }
 
-
 void heap_push (Heap* heap, void* node)
 {
     assert(heap!=NULL);
@@ -85,21 +83,18 @@ void heap_push (Heap* heap, void* node)
     update_downward(heap, node, i);
 }
 
-
-bool heap_pop (Heap* heap, void* *node_ptr)
+void* heap_pop (Heap* heap)
 {
     assert(heap!=NULL);
-    if(!heap) return 0;
-    if(heap->size <= 0) return 0;
+    if(!heap) return NULL;
+    if(heap->size <= 0) return NULL;
     void* root = heap->data[1];
     if(heap->indexed) *(int*)root = -1;
-    *node_ptr = root;
     int size = heap->size--;
     void* node = heap->data[size];
     update_upward(heap, node, 1);
-    return 1;
+    return root;
 }
-
 
 void heap_remove (Heap* heap, void* node)
 {
@@ -112,7 +107,6 @@ void heap_remove (Heap* heap, void* node)
     node = heap->data[size];
     update_upward(heap, node, i);
 }
-
 
 void heap_update (Heap* heap, void* node)
 {
@@ -134,19 +128,19 @@ void heap_heapify (Heap* heap)
 {}
 
 
-bool heap_find (const Heap* heap, void* value)
+void* heap_find (const Heap* heap, void* value)
 {
     assert(heap!=NULL);
-    if(!heap) return 0;
+    if(!heap) return NULL;
     int i;
     for(i=1; i <= heap->size; i++)
         if(0==heap->node_compare(heap->data[i], value, heap->arg))
-            return 1;
-    return 0;
+            return heap->data[i];
+    return NULL;
 }
 
 
-void heap_print(const Heap* heap, int level, // root is at level 1
+void heap_print(const Heap* heap, int level, // root is at level 1, the minimum
                 void (*node_print) (const void* node, const void* arg, int level))
 {
     if(level < 1) level = 1;

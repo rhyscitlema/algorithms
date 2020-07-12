@@ -16,10 +16,8 @@
 #include <_malloc.h>
 #else
 #include <malloc.h>
-#define _malloc malloc
-#define _free free
-#define memory_alloc(str)
-#define memory_freed(str)
+#define _malloc(size, type) malloc(size)
+#define _free(ptr, type) free(ptr)
 #endif
 
 
@@ -37,13 +35,12 @@ void* list_next (void* node) { return node ? nodeToKey(keyToNode(node)->next) : 
 void* list_prev (void* node) { return node ? nodeToKey(keyToNode(node)->prev) : NULL; }
 
 
-void* list_new (const void* key1, int keysize)
+void* list_new (const void* key1, unsigned int keysize)
 {
     assert(keysize>0);
-    int size = sizeof(ListNode)+keysize;
-    ListNode* node = (ListNode*)_malloc(size);
+    unsigned int size = sizeof(ListNode) + keysize;
+    ListNode* node = (ListNode*)_malloc(size, "ListNode");
     memset(node, 0, size);
-    memory_alloc("ListNode");
     node->keysize = keysize;
     void* key2 = nodeToKey(node);
     if(key1 && key2) memcpy(key2, key1, keysize);
@@ -52,10 +49,9 @@ void* list_new (const void* key1, int keysize)
 
 static void node_remove (ListNode* node)
 {
-    int size = sizeof(ListNode)+node->keysize;
+    unsigned int size = sizeof(ListNode) + node->keysize;
     memset(node, 0, size);
-    _free(node);
-    memory_freed("ListNode");
+    _free(node, "ListNode");
 }
 
 void list_free (List* list)
@@ -163,7 +159,8 @@ void* list_find (List* list, const void* arg, int compare(const void* key1, cons
     assert(list!=NULL);
     ListNode* node = list->head;
     for( ; node!=NULL; node = node->next)
-    {   void* key2 = nodeToKey(node);
+    {
+        void* key2 = nodeToKey(node);
         if(0==compare(key1, key2, arg)) return key2;
     }
     return NULL;
@@ -178,7 +175,7 @@ void  list_sort (List* list, const void* arg, int compare(const void* key1, cons
     ListNode *head, *tail;
     ListNode *start, *stop;
     ListNode *first, *second;
-    ListNode *root=list->head;
+    ListNode *root = list->head;
 
     for(size = 1; ; size *= 2)
     {
@@ -225,7 +222,7 @@ void  list_sort (List* list, const void* arg, int compare(const void* key1, cons
     // final fix of the list links
     root->prev = NULL;
     list->head = root;
-    while(1)
+    while(true)
     {
         end = root->next;
         if(end==NULL) { list->tail = root; break; }

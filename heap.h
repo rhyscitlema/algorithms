@@ -13,10 +13,15 @@
 
 #include <stdbool.h>
 
-/** Before calling any function, first initialise
-    heap.size to = 0, as well as heap.data to =
+/** First initialise heap.size to = 0
+    and initialise heap.data to =
     (void**) malloc (heap.maxSize * sizeof(void*));
-    The functions only change heap.size.
+
+    The functions will only change these two.
+    Set heap.node_compare to the callback function.
+    heap.arg is only passed to heap.node_compare().
+
+    heap.indexed is explained in the documentation.
 */
 typedef struct _Heap
 {   void** data;
@@ -29,7 +34,7 @@ typedef struct _Heap
 
 void heap_push (Heap* heap, void* node);
 
-bool heap_pop (Heap* heap, void* *node_ptr);
+void* heap_pop (Heap* heap); // return NULL if heap is empty
 
 void heap_remove (Heap* heap, void* node);
 
@@ -39,24 +44,22 @@ void heap_append (Heap* heap, void* node);
 
 void heap_heapify (Heap* heap);
 
-bool heap_find (const Heap* heap, void* value);
+void* heap_find (const Heap* heap, void* value); // return NULL if not found
 
-void heap_print(const Heap* heap, int level, // root is at level 1
+void heap_print(const Heap* heap, int level, // root is at level 1, the minimum
                 void (*node_print) (const void* node, const void* arg, int level));
 
 #endif
 
-
-
 /*
 
 ** Indexed heap:
-If heap is indexed then void* node must actually be an int* node,
-which points to a free int* memory to be used only by heap functions.
-This is only necessary if heap_update or heap_remove is to be used.
+This is only necessary if heap_update() or heap_remove() will be used.
+If heap is indexed then every "void* node" must actually be an int* node
+pointing to FREE int* memory to only be used by these heap functions.
 
 ** Append then heapify:
-heap_append is to be used only if heap_heapify will be called later.
+heap_append() is to be used only if heap_heapify() will be called later.
 They are useful so to set a heap of n elements in O(n) time. The
 alternative is to use heap_push, which would take O(n log n) time.
 

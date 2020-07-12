@@ -40,11 +40,11 @@ int main()
     enum OPR opr=0;
 
     printf("--------------------------------------------\n");
-    printf("| Enter: opr=<opr> <key1> <key2> ... quit  |\n");
+    printf("| Enter: opr=<opr> <key> <key> ... quit    |\n");
     printf("| <opr>: find, sort, del, headpush,        |\n");
     printf("         tailpush, headpop, tailpop        |\n");
     printf("| <key>: a string with no space.           |\n");
-    printf("| Example: opr=add pen paper book          |\n");
+    printf("| Example: opr=headpush pen paper book     |\n");
     printf("--------------------------------------------\n");
     printf(": ");
 
@@ -78,7 +78,7 @@ int main()
             case DEL: key2 = list_find(&list, NULL, node_compare, str); if(key2) list_delete(&list, key2); break;
             }
             if(opr!=FIND && key2!=NULL) list_print(&list);
-            else printf("%s\n", key2 ? "success" : "failure");
+            else printf("%s\n", (key2 ? "success" : "failure"));
         }
     }
     list_free(&list);

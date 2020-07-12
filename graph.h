@@ -10,70 +10,72 @@
 #define _GRAPH_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 
-typedef long cost;
-typedef struct { int u, v; cost c; } Edge;
-typedef struct { int    v; cost c; } *Adja;
-#define EdgeList Edge*
-#define AdjaList Adja*
+typedef long cost; // must match with load_edge_list()
+typedef struct { int u, v; cost c; } Edge, *EdgeP;
+typedef struct { int    v; cost c; } Adge, *Adja, **AdjaP;
+typedef const Edge* const_EdgeP;
+typedef const Adja* const_AdjaP;
 
-#define AdjaGet(adjaList,u) (adjaList[u])
-#define AdjaV(adjaList) (*(int*)(adjaList))         // get number of vertexes
-#define AdjaE(adjaList) (AdjaGet(adjaList,1)-1)->v  // get number of edges
-#define AdjaD(adjaList) (AdjaGet(adjaList,1)-1)->c  // get graph-is-directed
-#define AdjaPrev(adjaList) (adjaList + (AdjaD(adjaList) ? AdjaV(adjaList) : 0))
+#define AdjaU(adja,u) (adja[u]) // get list of vertexes adjacent to u
+#define AdjaV(adja) (*(int*)(adja))         // get number of vertexes
+#define AdjaE(adja) (AdjaU(adja,1)-1)->v    // get number of edges
+#define AdjaD(adja) (AdjaU(adja,1)-1)->c    // get graph-is-directed
+#define AdjaPrev(adja) (adja + (AdjaD(adja) ? AdjaV(adja) : 0))
 
 
-// The given graph is converted to a string
-// which is put inside the given 'out' and then
-// returned. 'out' is assumed to be large enough.
-char* print_edge_list (char* out, const EdgeList edgeList);
-char* print_adja_list (char* out, const AdjaList adjaList);
+// The given graph is converted to a string which
+// is put inside the given 'out' assumed to be
+// large enough. The end of string is returned.
+char* print_edge_list (char* out, const_EdgeP edgeList);
+char* print_adja_list (char* out, const_AdjaP adjaList);
 
-EdgeList load_edge_list (const char* str);
-AdjaList load_adja_list (const char* str);
+EdgeP load_edge_list (const char* str);
+AdjaP load_adja_list (const char* str);
 
-EdgeList clone_edge_list (const EdgeList edgeList);
-AdjaList clone_adja_list (const AdjaList adjaList);
+EdgeP clone_edge_list (const_EdgeP edgeList);
+AdjaP clone_adja_list (const_AdjaP adjaList);
 
-AdjaList edge_list_to_adja_list (const EdgeList edgeList);
-EdgeList adja_list_to_edge_list (const AdjaList adjaList);
+AdjaP edge_list_to_adja_list (const_EdgeP edgeList);
+EdgeP adja_list_to_edge_list (const_AdjaP adjaList);
 
-//void free_edge_list (EdgeList edgeList) { free(edgeList); }
-//void free_adja_list (AdjaList adjaList) { free(adjaList); }
+//void free_edge_list (EdgeP edgeList) { free(edgeList); }
+//void free_adja_list (AdjaP adjaList) { free(adjaList); }
 
 
 // code below shows how to access an adja_list
-static inline Adja getEdgeOfAdjaList (const AdjaList adjaList, int u, int v)
+static inline Adja getEdgeInAdjaList (const_AdjaP adjaList, int u, int v)
 {
-    int i, m = adjaList[u][0].v;    // get number of sink adjacent vertexes to u
-    for(i=1; i<=m; i++)             // for every sink adjacent vertex
-        if(v == adjaList[u][i].v)   // check if it is the given vertex v
-            return &adjaList[u][i]; // return pointer to adjacent edge
+    Adja U = AdjaU(adjaList,u);
+    int i, m = U[0].v;      // get number of sink adjacent vertexes to u.
+    for(i=1; i<=m; i++)     // for every sink adjacent vertex.
+        if(v == U[i].v)     // check if it is the given vertex v.
+            return U+i;     // return pointer to adjacent edge.
     return NULL;
 }
 
 // this does nothing but show how DFS traversal is coded
-void DFS_traversal (const AdjaList adjaList, int rootVertex);
+void DFS_traversal (const_AdjaP adjaList, int rootVertex);
 
 // renumber source and sink vertexes separately
-void renumber_edge_list_vertexes (EdgeList edgeList);
+void renumber_edge_list_vertexes (EdgeP edgeList);
 
 
 // reduce given graph to an MST
-void minimum_spanning_tree (EdgeList edgeList);
+void minimum_spanning_tree (EdgeP edgeList);
 
 // The result is the edges of the constructed tree,
 // with result[i].c = total cost from given source.
-EdgeList single_source_shortest_path (const AdjaList adjaList, int source);
+EdgeP single_source_shortest_path (const_AdjaP adjaList, int source);
 
 // return an array of single_source_shortest_paths,
 // for every vertex starting from vertex 1 at index 1.
-EdgeList* all_pairs_shortest_path (const AdjaList adjaList);
+EdgeP* all_pairs_shortest_path (const_AdjaP adjaList);
 
-// return the result graph as an unweighted undirected EdgeList
-EdgeList maximum_matching_unweighted (const AdjaList adjaList, bool skipPart1);
+// return the result graph as an unweighted undirected EdgeP
+EdgeP maximum_matching_unweighted (const_AdjaP adjaList, bool skipPart1);
 
 
 // Alternative to the bsearch() from <stdlib.h>.

@@ -16,10 +16,8 @@
 #include <_malloc.h>
 #else
 #include <malloc.h>
-#define _malloc malloc
-#define _free free
-#define memory_alloc(str)
-#define memory_freed(str)
+#define _malloc(size, type) malloc(size)
+#define _free(ptr, type) free(ptr)
 #endif
 
 
@@ -93,14 +91,13 @@ void* avl_prev (void* _avl)
 
 
 
-void* avl_new (const void* key1, int keysize)
+void* avl_new (const void* key1, unsigned int keysize)
 {
     if(keysize<=0) return NULL;
-    int size = sizeof(AVL)+keysize;
-    AVL* avl = (AVL*)_malloc(size);
+    unsigned int size = sizeof(AVL) + keysize;
+    AVL* avl = (AVL*)_malloc(size, "AVL_NODE");
     memset(avl, 0, size);
     avl->keysize = keysize;
-    memory_alloc("AVL_NODE");
     void* key2 = getkey(avl);
     if(key1 && key2) memcpy(key2, key1, keysize);
     return key2;
@@ -108,10 +105,9 @@ void* avl_new (const void* key1, int keysize)
 
 static void avl_remove (AVL* avl)
 {
-    int size = sizeof(AVL)+avl->keysize;
+    unsigned int size = sizeof(AVL) + avl->keysize;
     memset(avl, 0, size);
-    _free(avl);
-    memory_freed("AVL_NODE");
+    _free(avl, "AVL_NODE");
 }
 
 static void avl_free_r (AVL* avl)
@@ -134,8 +130,8 @@ void avl_free (AVLT* tree)
 static bool rebalance (AVLT* tree, AVL* node)
 {
     AVL *pnode, *tnode, *snode;
-    char l = (node->left ) ? node->left->height  : 0;
-    char r = (node->right) ? node->right->height : 0;
+    int l = (node->left ) ? node->left->height  : 0;
+    int r = (node->right) ? node->right->height : 0;
     node->height = 1 + (l>r?l:r);
 
     if(l-r>1)       // if left is longer
@@ -212,11 +208,11 @@ static bool rebalance (AVLT* tree, AVL* node)
 void* avl_do (enum AVL_OPR OPR,
               AVLT* tree,
               const void* key1,
-              int keysize,
+              unsigned int keysize,
               const void* arg,
               int (*compare) (const void* key1, const void* key2, const void* arg))
 {
-    assert(tree!=NULL);
+    assert(tree && (!tree->root == !tree->size));
     if(!keysize) keysize = tree->keysize;
     if(!arg) arg = tree->arg;
     if(!compare) compare = tree->compare;
@@ -305,7 +301,7 @@ void* avl_do (enum AVL_OPR OPR,
 
 void avl_delete (AVLT* tree, void* avl)
 {
-    assert(avl!=NULL);
+    if(avl==NULL) return;
     AVL *node = getnode(avl);
     AVL *tnode, *snode;
 
@@ -354,5 +350,32 @@ void avl_delete (AVLT* tree, void* avl)
         tree->size--;
     }
     avl_remove(node);
+}
+
+
+
+static long node_valid (const AVL* node)
+{
+    assert(node!=NULL);
+    if(!node) return 0;
+    long l=0, r=0;
+    if(node->left){
+        if(node->left->parent != node) return 0;
+        if(!(l = node_valid(node->left))) return 0;
+    }
+    if(node->right){
+        if(node->right->parent != node) return 0;
+        if(!(r = node_valid(node->right))) return 0;
+        if(node->left == node->right) return 0;
+    }
+    return l+r+1;
+}
+
+int avl_valid (const AVLT* tree)
+{
+    if(!tree->size && !tree->root) return true;
+    if(!tree->size || !tree->root) return false;
+    long size = node_valid(tree->root);
+    return size == tree->size;
 }
 

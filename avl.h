@@ -14,15 +14,15 @@ typedef struct _AVL
 {   struct _AVL *left;
     struct _AVL *right;
     struct _AVL *parent;
-    int keysize;
-    char height;
+    unsigned int keysize;
+    unsigned int height;
 } AVL;
 
 typedef struct _AVLT    // AVL Tree
 {   AVL* root;          // root of tree
-    int size;           // number of nodes
+    long size;          // number of nodes
 
-    int keysize;
+    unsigned int keysize;
     const void* arg;
     int (*compare) (const void* key1, const void* key2, const void* arg);
 } AVLT;
@@ -47,7 +47,7 @@ enum AVL_OPR
     'arg' is only passed to the compare() function.
     'key1' is the given key, 'key2' is from existing node.
 
-    If given key does not already exist then NULL is
+    If given key1 does not already exist then NULL is
     returned, else if on AVL_INS or AVL_DEL then (void*)1
     is returned, else the existing key2 is returned.
 
@@ -59,7 +59,7 @@ enum AVL_OPR
 void* avl_do (enum AVL_OPR OPR,
               AVLT* tree,
               const void* key1,
-              int keysize,
+              unsigned int keysize,
               const void* arg,
               int (*compare) (const void* key1, const void* key2, const void* arg));
 
@@ -73,8 +73,14 @@ void* avl_prev (void* avl);     // given node, get its prev
 void* avl_left (void* avl);     // given node, get its left
 void* avl_right (void* avl);    // given node, get its right
 void* avl_parent (void* avl);   // given node, get its parent
-void  avl_delete (AVLT* tree, void* avl); // given node, delete it. tree can be NULL
-void* avl_new (const void* key1, int keysize); // get a new node, use AVL_PUT later
+void  avl_delete (AVLT* tree, void* avl); // given node, delete it
+// if tree = NULL then node obtained from avl_new() is deleted.
+
+// get a new node, use AVL_PUT later, if(key1) then copy it.
+void* avl_new (const void* key1, unsigned int keysize);
+
+// check the AVL tree data structure and return bool
+int avl_valid (const AVLT* tree);
 
 
 #endif

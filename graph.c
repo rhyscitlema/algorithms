@@ -122,8 +122,7 @@ EdgeP adja_list_to_edge_list (const_AdjaP adja)
 
 const char* strNext1 (const char* str)
 {
-    while(true) // not a loop
-    {
+    do{
         if(!str || !*str) break;
         if(*str != '#')
         {
@@ -157,8 +156,7 @@ const char* strNext1 (const char* str)
                 { str++; break; }
             }
         }
-        break;
-    }
+    }while(0);
     return str;
 }
 

@@ -27,9 +27,9 @@ Array file_to_array (const char* filename, Array old)
             if(fread(out.data, 1, out.size, file) != out.size)
             {
                 free(out.data);
-                out.data=NULL;
+                out.data = NULL;
             }
-            else out.data[out.size]=0;
+            else out.data[out.size] = 0;
         }
         fclose(file);
     }

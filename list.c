@@ -124,7 +124,8 @@ void* list_node_pop (List* list, void* key)
 
 void  list_head_push (List* list, void* key)
 {
-	assert(list && key);
+	assert(list!=NULL);
+	if(!list || !key) return;
 	ListNode* node = keyToNode(key);
 	node->prev = NULL;
 	node->next = list->head;
@@ -136,7 +137,8 @@ void  list_head_push (List* list, void* key)
 
 void  list_tail_push (List* list, void* key)
 {
-	assert(list && key);
+	assert(list!=NULL);
+	if(!list || !key) return;
 	ListNode* node = keyToNode(key);
 	node->next = NULL;
 	node->prev = list->tail;

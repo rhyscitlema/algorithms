@@ -120,25 +120,19 @@ EdgeP adja_list_to_edge_list (const_AdjaP adja)
 
 
 
-const char* strNext1 (const char* str)
+const char* skipComment1 (const char* str)
 {
-	do{
-		if(!str || !*str) break;
-		if(*str != '#')
-		{
-			str++;
-			if(!*str) break;
-			if(*str != '#') break;
-		}
+	while(true)
+	{
+		if(!str || *str != '#') break;
 		str++;
-		if(!*str) break;
-		if(*str != '{')
+		if(*str != '{') // if a single line comment
 		{
 			// skip till '\n' is found, excluding it
 			while(*str && *str != '\n') str++;
 			break;
 		}
-		// else: skip till "}#" is found, including it
+		// else skip till "}#" is found, including it
 		char a, b;
 		int level=1;
 		str++;
@@ -156,17 +150,17 @@ const char* strNext1 (const char* str)
 				{ str++; break; }
 			}
 		}
-	}while(0);
+	}
 	return str;
 }
 
-static inline bool isSpace(char c)
-{ return (c==' ' || c=='\t' || c=='\r' || c=='\n'); }
+static inline bool isSpace (char c)
+{ return (c==' ' || c=='\t' || c=='\r' || c=='\n' || c==0xA0); }
 
 const char* nextWord (const char* str)
 {
-	while(!isSpace(*str) && *str) str = strNext1(str);
-	while( isSpace(*str)) str = strNext1(str);
+	while(!isSpace(*str) && *str) str = skipComment1(++str);
+	while( isSpace(*str)        ) str = skipComment1(++str);
 	return str;
 }
 
@@ -179,8 +173,9 @@ EdgeP load_edge_list (const char* str)
 	bool directed;
 	bool weighted;
 
-	if(*str=='#') str = strNext1(str);
-	while(isSpace(*str)) str = strNext1(str);
+	str = skipComment1(str);
+	while(isSpace(*str))
+		str = skipComment1(++str);
 
 	if(!*str || sscanf(str, "%d", &V)!=1) return NULL; str=nextWord(str);
 	if(!*str || sscanf(str, "%d", &E)!=1) return NULL; str=nextWord(str);
@@ -200,6 +195,7 @@ EdgeP load_edge_list (const char* str)
 		{
 			sscanf(str, "%d", &edge[i].u); str=nextWord(str); // get source vertex u
 			sscanf(str, "%d", &edge[i].v); str=nextWord(str); // get sink vertex v
+
 			if(weighted){
 				sscanf(str, "%ld", &edge[i].c); // get edge cost c
 				str=nextWord(str);

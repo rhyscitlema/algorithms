@@ -109,11 +109,9 @@ It is important to know how graph data is represented:
 
 Below is an example directed unweighted graph:
 	"""""
-	 23
-	The first non-space content must be an integer.
-	It denotes the number of following lines to
-	skip before the start of the graph data.
-	Here this number is 23.
+	#{
+	#... is used for single-line commenting.
+	#{ ... }# is used for block commenting.
 
 	The graph data starts with 5 values:
 	1) number of vertexes
@@ -127,11 +125,10 @@ Below is an example directed unweighted graph:
 			of source vertexes.
 
 	Unweighted defaults to weights of 1.
-	Given weights must be of ECost type.
-	load_edge_list() expects int type.
-
-	Any content after the graph data is ignored.
+	Given weights must be of 'cost' type.
+	Content after the graph data is ignored.
 	Vertex numbering starts from 1 not 0.
+        }#
 
 	9 5 1 0 0
 

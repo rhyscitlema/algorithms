@@ -35,12 +35,12 @@ static inline void tree_clear (Tree *tree)
 { if(tree) { tree->root=0; tree->size=0; } }
 
 
-enum TREE_OPR {     // *** first read comment on tree_do() ***
-	TREE_FIND,      // find item2 which is == given item1
-	TREE_CEIL,      // find lowest item2 which is >= item1
-	TREE_FLOOR,     // find highest item2 which is <= item1
-	TREE_ADD,       // add if not found, return found item2 or NULL
-	TREE_INS,       // add even if found, return found item2 or NULL
+enum TREE_OPR {     // **** First read comment on tree_do() ****
+	TREE_FIND,      // find and return item2 which is == given item1
+	TREE_CEIL,      // find and return lowest item2 which is >= item1
+	TREE_FLOOR,     // find and return highest item2 which is <= item1
+	TREE_ADD,       // add if not found, if found return the found item2
+	TREE_INS,       // add even if found, if found return the found item2
 	TREE_PUT,       // do TREE_INS with given item obtained from tree_new()
 	TREE_REM,       // find one and remove, if found return removed item2
 	TREE_DEL,       // find one and delete, if found return deleted item2
@@ -48,7 +48,7 @@ enum TREE_OPR {     // *** first read comment on tree_do() ***
 
 
 /**
-	If on first call to tree_do() then set *tree = {0}.
+	If on first call to tree_do() then set (*tree) = {0}.
 
 	'arg' is only passed to the compare() function.
 	'item1' is the given item,

@@ -19,9 +19,11 @@
 	if(heap->indexed) \
 		*(int*)HDATA(level) = level; \
 
+
 static bool update_downward (Heap* heap, ITEM* node, int level)
 {
-	do{
+	while(true)
+	{
 		if(level < 2) break;
 		int parent = level/2;
 
@@ -32,7 +34,8 @@ static bool update_downward (Heap* heap, ITEM* node, int level)
 			level = parent;
 			continue;
 		}
-	} while(false);
+		break;
+	}
 	if(HDATA(level)==node) // if no update
 		return false;
 	HDATA(level) = node;
@@ -40,10 +43,12 @@ static bool update_downward (Heap* heap, ITEM* node, int level)
 	return true;
 }
 
+
 static bool update_upward (Heap* heap, ITEM* node, int level)
 {
 	int size = heap->size;
-	do{
+	while(true)
+	{
 		int left  = level*2+0;
 		int right = level*2+1;
 		if(left > size) break;
@@ -71,7 +76,8 @@ static bool update_upward (Heap* heap, ITEM* node, int level)
 				continue;
 			}
 		}
-	} while(false);
+		break;
+	}
 	if(HDATA(level)==node) // if no update
 		return false;
 	HDATA(level) = node;
@@ -92,6 +98,7 @@ void heap_push (Heap* heap, ITEM* node)
 	update_downward(heap, node, level);
 }
 
+
 ITEM* heap_pop (Heap* heap)
 {
 	assert(heap!=NULL);
@@ -108,20 +115,33 @@ ITEM* heap_pop (Heap* heap)
 	return root;
 }
 
+
+ITEM* heap_peek (Heap* heap)
+{
+	assert(heap!=NULL);
+	if(!heap) return NULL;
+	if(heap->size <= 0) return NULL;
+	ITEM* root = HDATA(1);
+	return root;
+}
+
+
 void heap_remove (Heap* heap, ITEM* node)
 {
 	assert(heap && node && heap->indexed);
 	if(!(heap && node && heap->indexed)) return;
 
 	int level = *(int*)node;
-	assert(0 < level && level < heap->size);
-	if(!(0 < level && level < heap->size)) return;
-	*(int*)node = -1; // set to invalid
+	assert(0 < level && level <= heap->size);
+	if(!(0 < level && level <= heap->size)) return;
 
+	*(int*)node = -1; // set to invalid
 	int size = heap->size--;
+
 	node = HDATA(size);
 	update_upward(heap, node, level);
 }
+
 
 void heap_update (Heap* heap, ITEM* node)
 {
@@ -129,8 +149,8 @@ void heap_update (Heap* heap, ITEM* node)
 	if(!(heap && node && heap->indexed)) return;
 
 	int level = *(int*)node;
-	assert(0 < level && level < heap->size);
-	if(!(0 < level && level < heap->size)) return;
+	assert(0 < level && level <= heap->size);
+	if(!(0 < level && level <= heap->size)) return;
 
 	if(!update_downward(heap, node, level))
 		update_upward(heap, node, level);
@@ -141,6 +161,7 @@ void heap_append (Heap* heap, ITEM* node)
 {
 	heap_push(heap, node);
 }
+
 
 void heap_heapify (Heap* heap) // TODO: implement this
 {}

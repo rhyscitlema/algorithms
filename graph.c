@@ -177,11 +177,11 @@ EdgeP load_edge_list (const char* str)
 	while(isSpace(*str))
 		str = skipComment1(++str);
 
-	if(!*str || sscanf(str, "%d", &V)!=1) return NULL; str=nextWord(str);
-	if(!*str || sscanf(str, "%d", &E)!=1) return NULL; str=nextWord(str);
-	if(!*str || sscanf(str, "%d", &i)!=1) return NULL; str=nextWord(str); directed=i;
-	if(!*str || sscanf(str, "%d", &i)!=1) return NULL; str=nextWord(str); weighted=i;
-	if(!*str || sscanf(str, "%d", &i)!=1) return NULL; str=nextWord(str);
+	if(!*str || sscanf(str, "%d", &V)!=1) {return NULL;} str=nextWord(str);
+	if(!*str || sscanf(str, "%d", &E)!=1) {return NULL;} str=nextWord(str);
+	if(!*str || sscanf(str, "%d", &i)!=1) {return NULL;} str=nextWord(str); directed=i;
+	if(!*str || sscanf(str, "%d", &i)!=1) {return NULL;} str=nextWord(str); weighted=i;
+	if(!*str || sscanf(str, "%d", &i)!=1) {return NULL;} str=nextWord(str);
 	if(V<0 || E<0) return NULL;
 
 	EdgeP edge = (EdgeP)malloc((1+E)*sizeof(Edge));

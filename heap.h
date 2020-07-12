@@ -44,6 +44,8 @@ void heap_push (Heap* heap, ITEM* node);
 
 ITEM* heap_pop (Heap* heap); // return NULL if heap is empty
 
+ITEM* heap_peek (Heap* heap); // return NULL if heap is empty
+
 void heap_remove (Heap* heap, ITEM* node);
 
 void heap_update (Heap* heap, ITEM* node);

@@ -142,7 +142,7 @@ static bool rebalance (Tree* tree, TreeNode* node)
 	TreeNode *pnode, *tnode, *snode;
 	int l = (node->left ) ? node->left->height  : 0;
 	int r = (node->right) ? node->right->height : 0;
-	node->height = 1 + (l>r?l:r);
+	node->height = 1 + (l>r ? l : r);
 
 	if(l-r > 1)     // if left is longer
 	{
@@ -387,12 +387,14 @@ static long node_valid (const TreeNode* node)
 	if(node->left)
 	{
 		if(node->left->parent != node) return 0;
-		if(!(l = node_valid(node->left))) return 0;
+		l = node_valid(node->left);
+		if(!l) return 0;
 	}
 	if(node->right)
 	{
 		if(node->right->parent != node) return 0;
-		if(!(r = node_valid(node->right))) return 0;
+		r = node_valid(node->right);
+		if(!r) return 0;
 		if(node->left == node->right) return 0;
 	}
 	return l+r+1;

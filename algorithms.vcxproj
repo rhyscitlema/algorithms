@@ -129,18 +129,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\fileio.c" />
-    <ClCompile Include="..\graph.c" />
-    <ClCompile Include="..\heap.c" />
-    <ClCompile Include="..\list.c" />
-    <ClCompile Include="..\tree.c" />
+    <ClCompile Include="fileio.c" />
+    <ClCompile Include="graph.c" />
+    <ClCompile Include="heap.c" />
+    <ClCompile Include="list.c" />
+    <ClCompile Include="tree.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\fileio.h" />
-    <ClInclude Include="..\graph.h" />
-    <ClInclude Include="..\heap.h" />
-    <ClInclude Include="..\list.h" />
-    <ClInclude Include="..\tree.h" />
+    <ClInclude Include="fileio.h" />
+    <ClInclude Include="graph.h" />
+    <ClInclude Include="heap.h" />
+    <ClInclude Include="list.h" />
+    <ClInclude Include="tree.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
